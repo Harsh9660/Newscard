@@ -1,0 +1,107 @@
+{
+  "exported_at": "2026-05-24T15:49:04.754566Z",
+  "date": "2026-05-24",
+  "dashboard": {
+    "customer_count": 4,
+    "product_count": 2,
+    "round_count": 2,
+    "total_outstanding": 28.0,
+    "customers_with_balance": 2
+  },
+  "customers": [
+    {
+      "id": 4,
+      "name": "Bob Jones",
+      "address": "5 Elm Street",
+      "phone": "07700900456",
+      "email": null,
+      "balance": 0.0,
+      "street": "Elm Street",
+      "round_id": 2,
+      "notes": null,
+      "created_at": "2026-05-24 15:10:55.999627",
+      "updated_at": "2026-05-24 15:10:55.999635",
+      "round_name": "Evening Round B"
+    },
+    {
+      "id": 2,
+      "name": "Hit Desai ",
+      "address": "Behind Axis Bank, Nadiad",
+      "phone": "",
+      "email": "",
+      "balance": 0.0,
+      "street": "",
+      "round_id": null,
+      "notes": "",
+      "created_at": "2026-05-24 15:09:30.677274",
+      "updated_at": "2026-05-24 15:09:30.677282",
+      "round_name": null
+    },
+    {
+      "id": 3,
+      "name": "Jane Smith",
+      "address": "12 Oak Avenue",
+      "phone": "07700900123",
+      "email": null,
+      "balance": 15.5,
+      "street": "Oak Avenue",
+      "round_id": 1,
+      "notes": null,
+      "created_at": "2026-05-24 15:10:55.972819",
+      "updated_at": "2026-05-24 15:10:55.972824",
+      "round_name": "Morning Round A"
+    },
+    {
+      "id": 1,
+      "name": "Test Customer",
+      "address": "1 High St",
+      "phone": "07700900000",
+      "email": null,
+      "balance": 12.5,
+      "street": null,
+      "round_id": null,
+      "notes": null,
+      "created_at": "2026-05-24 15:08:32.976615",
+      "updated_at": "2026-05-24 15:08:32.976625",
+      "round_name": null
+    }
+  ],
+  "products": [
+    {
+      "id": 2,
+      "name": "Sunday Times",
+      "product_type": "newspaper",
+      "price": 3.5,
+      "supplier": "NewsUK"
+    },
+    {
+      "id": 1,
+      "name": "The Daily Herald",
+      "product_type": "newspaper",
+      "price": 1.2,
+      "supplier": "NewsUK"
+    }
+  ],
+  "delivery_rounds": [
+    {
+      "id": 2,
+      "name": "Evening Round B",
+      "round_type": "evening",
+      "paperboy": "Sarah",
+      "notes": null,
+      "customer_count": 1,
+      "created_at": "2026-05-24 15:10:55.917450",
+      "updated_at": "2026-05-24 15:10:55.917456"
+    },
+    {
+      "id": 1,
+      "name": "Morning Round A",
+      "round_type": "morning",
+      "paperboy": "Tom",
+      "notes": null,
+      "customer_count": 1,
+      "created_at": "2026-05-24 15:10:55.839744",
+      "updated_at": "2026-05-24 15:10:55.839752"
+    }
+  ]
+}

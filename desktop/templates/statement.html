@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Statement of Account</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 13px;
+        color: #333;
+        margin: 0;
+        padding: 30px;
+        line-height: 1.5;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+    }
+
+    .business-name {
+        font-size: 28px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .business-details {
+        margin-top: 6px;
+        color: #666;
+        font-size: 12px;
+    }
+
+    .document-title {
+        margin-top: 15px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #2c3e50;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Customer & Statement Info */
+    .info-section {
+        width: 100%;
+        margin-bottom: 25px;
+    }
+
+    .info-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .info-table td {
+        vertical-align: top;
+        width: 50%;
+        padding: 0;
+    }
+
+    .info-box {
+        border: 1px solid #dcdcdc;
+        padding: 15px;
+        border-radius: 4px;
+        background: #fafafa;
+    }
+
+    .section-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    /* Summary */
+    .summary-section {
+        border: 1px solid #dcdcdc;
+        border-radius: 4px;
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .summary-header {
+        background: #2c3e50;
+        color: white;
+        padding: 10px 15px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .summary-body {
+        padding: 15px;
+    }
+
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .summary-table td {
+        padding: 6px 0;
+    }
+
+    .summary-table td:last-child {
+        text-align: right;
+        font-weight: 600;
+    }
+
+    .balance-row {
+        border-top: 2px solid #dcdcdc;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .balance-row td {
+        padding-top: 12px;
+    }
+
+    /* Transactions */
+    .transactions-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+    }
+
+    .transactions-table thead {
+        background: #2c3e50;
+        color: white;
+    }
+
+    .transactions-table th {
+        padding: 10px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .transactions-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e6e6e6;
+    }
+
+    .transactions-table tbody tr:nth-child(even) {
+        background: #f9f9f9;
+    }
+
+    .amount {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    /* Footer */
+    .footer {
+        border-top: 2px solid #2c3e50;
+        padding-top: 20px;
+    }
+
+    .outstanding-box {
+        text-align: right;
+        margin-bottom: 15px;
+    }
+
+    .outstanding-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .outstanding-amount {
+        font-size: 24px;
+        font-weight: 700;
+        color: #c0392b;
+    }
+
+    .due-date {
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    .thank-you {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        margin-top: 25px;
+    }
+
+    @media print {
+        body {
+            padding: 0;
+        }
+
+        .container {
+            max-width: 100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1 class="business-name">{business_name}</h1>
+
+        <div class="business-details">
+            {business_address}<br>
+            Tel: {business_phone}
+        </div>
+
+        <div class="document-title">
+            Statement of Account
+        </div>
+    </div>
+
+    <!-- Customer & Statement Details -->
+    <div class="info-section">
+        <table class="info-table">
+            <tr>
+                <td style="padding-right:10px;">
+                    <div class="info-box">
+                        <div class="section-label">Customer</div>
+                        <strong>{customer_name}</strong><br>
+                        {customer_address}
+                    </div>
+                </td>
+
+                <td style="padding-left:10px;">
+                    <div class="info-box">
+                        <div class="section-label">Statement Information</div>
+                        <strong>Statement Date:</strong> {statement_date}<br>
+                        <strong>Account Number:</strong> {account_number}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Account Summary -->
+    <div class="summary-section">
+        <div class="summary-header">
+            Account Summary
+        </div>
+
+        <div class="summary-body">
+            <table class="summary-table">
+                <tr>
+                    <td>Previous Balance</td>
+                    <td>£{previous_balance}</td>
+                </tr>
+                <tr>
+                    <td>Payments Received</td>
+                    <td>£{payments_received}</td>
+                </tr>
+                <tr>
+                    <td>Voucher Credits</td>
+                    <td>£{voucher_credits}</td>
+                </tr>
+                <tr>
+                    <td>Adjustments</td>
+                    <td>£{adjustments}</td>
+                </tr>
+
+                <tr class="balance-row">
+                    <td>Current Balance</td>
+                    <td>£{current_balance}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Transactions -->
+    <table class="transactions-table">
+        <thead>
+            <tr>
+                <th style="width:12%;">Date</th>
+                <th style="width:15%;">Reference</th>
+                <th>Description</th>
+                <th style="width:12%;" class="amount">Debit</th>
+                <th style="width:12%;" class="amount">Credit</th>
+                <th style="width:14%;" class="amount">Balance</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {transactions_html}
+        </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+
+        <div class="outstanding-box">
+            <div class="outstanding-label">Total Outstanding</div>
+            <div class="outstanding-amount">£{current_balance}</div>
+        </div>
+
+        <div class="due-date">
+            <strong>Payment Due Date:</strong> {due_date}
+        </div>
+
+        <div class="thank-you">
+            Thank you for your business.
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

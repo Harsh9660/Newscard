@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bill of Charges</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 13px;
+        color: #333;
+        margin: 0;
+        padding: 30px;
+        line-height: 1.5;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+        border-bottom: 2px solid #2c3e50;
+        padding-bottom: 15px;
+        margin-bottom: 25px;
+    }
+
+    .business-name {
+        font-size: 28px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .business-details {
+        margin-top: 6px;
+        color: #666;
+        font-size: 12px;
+    }
+
+    .document-title {
+        margin-top: 15px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #2c3e50;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    /* Information Section */
+    .info-section {
+        margin-bottom: 25px;
+    }
+
+    .info-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .info-table td {
+        vertical-align: top;
+        width: 50%;
+    }
+
+    .info-box {
+        border: 1px solid #dcdcdc;
+        border-radius: 4px;
+        padding: 15px;
+        background: #fafafa;
+    }
+
+    .section-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    /* Charges Table */
+    .charges-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 25px;
+    }
+
+    .charges-table thead {
+        background: #2c3e50;
+        color: white;
+    }
+
+    .charges-table th {
+        padding: 10px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .charges-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e6e6e6;
+    }
+
+    .charges-table tbody tr:nth-child(even) {
+        background: #f9f9f9;
+    }
+
+    .amount {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    /* Summary */
+    .summary-section {
+        margin-bottom: 30px;
+    }
+
+    .summary-card {
+        width: 350px;
+        margin-left: auto;
+        border: 1px solid #dcdcdc;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .summary-header {
+        background: #2c3e50;
+        color: white;
+        padding: 10px 15px;
+        font-weight: 700;
+    }
+
+    .summary-body {
+        padding: 15px;
+    }
+
+    .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .summary-table td {
+        padding: 8px 0;
+    }
+
+    .summary-table td:last-child {
+        text-align: right;
+        font-weight: 600;
+    }
+
+    .total-row {
+        border-top: 2px solid #dcdcdc;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .total-row td {
+        padding-top: 12px;
+    }
+
+    /* Footer */
+    .footer {
+        border-top: 2px solid #2c3e50;
+        padding-top: 20px;
+    }
+
+    .payment-notice {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .due-info {
+        font-size: 14px;
+    }
+
+    .amount-due-box {
+        text-align: right;
+    }
+
+    .amount-due-label {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .amount-due {
+        font-size: 28px;
+        font-weight: 700;
+        color: #c0392b;
+    }
+
+    .footer-note {
+        text-align: center;
+        margin-top: 25px;
+        color: #666;
+        font-style: italic;
+    }
+
+    @media print {
+        body {
+            padding: 0;
+        }
+
+        .container {
+            max-width: 100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1 class="business-name">{business_name}</h1>
+
+        <div class="business-details">
+            {business_address}<br>
+            Tel: {business_phone}
+        </div>
+
+        <div class="document-title">
+            Bill of Charges
+        </div>
+    </div>
+
+    <!-- Customer & Billing Information -->
+    <div class="info-section">
+        <table class="info-table">
+            <tr>
+                <td style="padding-right:10px;">
+                    <div class="info-box">
+                        <div class="section-label">Bill To</div>
+
+                        <strong>{customer_name}</strong><br>
+                        {customer_address}
+                    </div>
+                </td>
+
+                <td style="padding-left:10px;">
+                    <div class="info-box">
+                        <div class="section-label">Billing Information</div>
+
+                        <strong>Bill Date:</strong> {bill_date}<br>
+                        <strong>Due Date:</strong> {due_date}<br>
+                        <strong>Account Number:</strong> {account_number}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Charges -->
+    <table class="charges-table">
+        <thead>
+            <tr>
+                <th style="width:18%;">Date</th>
+                <th>Description</th>
+                <th style="width:20%;" class="amount">Amount</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {bill_items_html}
+        </tbody>
+    </table>
+
+    <!-- Summary -->
+    <div class="summary-section">
+        <div class="summary-card">
+
+            <div class="summary-header">
+                Billing Summary
+            </div>
+
+            <div class="summary-body">
+                <table class="summary-table">
+                    <tr>
+                        <td>Subtotal</td>
+                        <td>£{subtotal}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Credits Applied</td>
+                        <td>£{credits_applied}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Payments Received</td>
+                        <td>£{payments_received}</td>
+                    </tr>
+
+                    <tr class="total-row">
+                        <td>Amount Due</td>
+                        <td>£{amount_due}</td>
+                    </tr>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+
+        <div class="payment-notice">
+
+            <div class="due-info">
+                <strong>Payment Due Date:</strong><br>
+                {due_date}
+            </div>
+
+            <div class="amount-due-box">
+                <div class="amount-due-label">
+                    Outstanding Balance
+                </div>
+
+                <div class="amount-due">
+                    £{amount_due}
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer-note">
+            Please ensure payment is received by the due date to avoid any interruption of service.
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #0d1117;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: "JetBrains Mono", Consolas, monospace;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a5c;
+  border-radius: 4px;
+}
+
+.toast {
+  @apply fixed top-4 right-4 z-[200] px-4 py-2 rounded-md text-sm font-semibold shadow-lg;
+}

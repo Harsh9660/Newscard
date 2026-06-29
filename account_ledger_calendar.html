@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Account Ledger Calendar</title>
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --header-bg: #0d0d0d;
+      --bottom-bg: #111111;
+      --info-bg: #222222;
+      --cell-normal: #2a2a2a;
+      --teal: #20b2aa;
+      --white: #ffffff;
+      --grey: #888888;
+      --date-future: #666666;
+      --paid: #1a4a1a;
+      --due-soon: #ff9800;
+      --total-red: #8b0000;
+      --border-color: var(--teal);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--white);
+      font-family: "Courier New", Courier, monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      font-weight: bold;
+      color: var(--teal);
+      border-bottom: 2px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    
+    .top-bar .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .arrow-btn {
+      cursor: pointer;
+      padding: 0 4px;
+      user-select: none;
+    }
+
+    .arrow-btn:hover {
+      color: var(--white);
+    }
+
+    .year-display {
+      font-size: 24px;
+      letter-spacing: 4px;
+      text-align: center;
+      flex: 1;
+    }
+
+    /* Info Panel */
+    .info-panel {
+      display: flex;
+      padding: 8px 16px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .info-box {
+      background: var(--info-bg);
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+
+    .customer-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .customer-info span {
+      color: var(--teal);
+    }
+
+    .financial-info {
+      width: 250px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: bold;
+    }
+
+    .total-badge {
+      background: var(--total-red);
+      color: var(--white);
+      padding: 4px 12px;
+      border-radius: 4px;
+    }
+
+    /* Calendar Grid */
+    .calendar-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 16px;
+      overflow: hidden;
+    }
+    
+    .months-header {
+      display: flex;
+      background: var(--header-bg);
+      border: 2px solid var(--border-color);
+      border-bottom: none;
+    }
+    
+    .month-title {
+      flex: 1;
+      text-align: center;
+      padding: 6px 0;
+      border-right: 1px solid var(--border-color);
+      font-weight: bold;
+    }
+    
+    .month-title:last-child {
+      border-right: none;
+    }
+    
+    .grid-body {
+      flex: 1;
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      border: 2px solid var(--border-color);
+    }
+    
+    .grid-row {
+      display: flex;
+    }
+    
+    .cell {
+      flex: 1;
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--cell-normal);
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .grid-row:last-child .cell {
+      border-bottom: none;
+    }
+    
+    .cell:last-child {
+      border-right: none;
+    }
+
+    .cell.empty {
+      background: var(--bg);
+      cursor: default;
+    }
+    
+    .cell.selected {
+      background: var(--teal);
+      color: var(--white);
+      outline: 2px solid var(--white);
+      outline-offset: -2px;
+      z-index: 10;
+    }
+    
+    .cell.future {
+      color: var(--date-future);
+    }
+    
+    .cell.due-soon {
+      color: var(--due-soon);
+      font-weight: bold;
+    }
+    
+    .cell.paid {
+      color: #86efac; /* light green text */
+    }
+
+    .date-num {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .date-amt {
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    /* Bottom Bar */
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      background: var(--bottom-bg);
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--grey);
+      flex-shrink: 0;
+    }
+    
+    .bottom-bar span.hl {
+      color: var(--teal);
+    }
+
+    /* Modals */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    .modal-box {
+      background: var(--bg);
+      border: 2px solid var(--border-color);
+      padding: 20px;
+      width: 320px;
+      border-radius: 4px;
+    }
+    
+    .modal-title {
+      color: var(--teal);
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .menu-btn {
+      display: block;
+      width: 100%;
+      background: var(--cell-normal);
+      border: 1px solid var(--border-color);
+      color: var(--white);
+      padding: 10px;
+      margin-bottom: 8px;
+      text-align: left;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    
+    .menu-btn:hover {
+      background: var(--info-bg);
+      border-color: var(--white);
+    }
+    
+    .modal-footer {
+      margin-top: 16px;
+      text-align: center;
+    }
+    
+    .modal-footer button {
+      background: none;
+      border: none;
+      color: var(--grey);
+      font-family: inherit;
+      cursor: pointer;
+    }
+    
+    .modal-footer button:hover {
+      color: var(--white);
+    }
+
+    .modal-footer button.primary {
+      color: var(--teal);
+      font-weight: bold;
+      margin-left: 20px;
+    }
+    
+    .modal-footer button.primary:hover {
+      color: var(--white);
+    }
+    
+    .log-toast {
+      position: fixed;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--teal);
+      color: var(--white);
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 200;
+      pointer-events: none;
+    }
+    
+    .log-toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="controls">
+      <span>A/c No: <span id="ac-no">1</span></span>
+      <span class="arrow-btn" id="btn-prev-ac">◀</span>
+      <span class="arrow-btn" id="btn-next-ac">▶</span>
+    </div>
+    <div class="controls" style="flex: 1; justify-content: center;">
+      <span class="arrow-btn" id="btn-prev-yr">◀</span>
+      <span class="year-display" id="year-display">2026</span>
+      <span class="arrow-btn" id="btn-next-yr">▶</span>
+    </div>
+    <div id="clock">00:00:00</div>
+  </div>
+
+  <!-- Info Panel -->
+  <div class="info-panel">
+    <div class="info-box customer-info">
+      <div><span>Name: </span><span id="c-name" style="color:var(--white)">---</span></div>
+      <div><span>Address: </span><span id="c-addr" style="color:var(--white)">---</span></div>
+      <div><span>Phone: </span><span id="c-phone" style="color:var(--white)">---</span></div>
+    </div>
+    <div class="info-box financial-info">
+      <span>Total Due:</span>
+      <span class="total-badge" id="total-due">£0.00</span>
+    </div>
+  </div>
+
+  <!-- Calendar Grid -->
+  <div class="calendar-container">
+    <div class="months-header" id="months-header">
+      <!-- Generated via JS -->
+    </div>
+    <div class="grid-body" id="grid-body">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <div>
+      close | F1 F2 help | <span class="hl">F7 received</span> | F6 papers | F8 leave | <span class="hl">F9 options</span>
+    </div>
+    <div>PgUp/PgDn year</div>
+  </div>
+
+  <!-- Toast -->
+  <div class="log-toast" id="toast">Action logged</div>
+
+  <!-- Options Modal (F9) -->
+  <div class="modal-overlay" id="modal-options">
+    <div class="modal-box">
+      <div class="modal-title">Options</div>
+      <button class="menu-btn" data-key="1">1. Record vouchers</button>
+      <button class="menu-btn" data-key="2">2. Preview statement</button>
+      <button class="menu-btn" data-key="3">3. Print statement</button>
+      <button class="menu-btn" data-key="4">4. Preview bill</button>
+      <button class="menu-btn" data-key="5">5. Print bill</button>
+      <div class="modal-footer">
+        <button id="btn-close-options">Esc Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Modal (F7) -->
+  <div class="modal-overlay" id="modal-payment">
+    <div class="modal-box">
+      <div class="modal-title">Record Payment</div>
+      <div style="font-size: 14px; margin-bottom: 20px; line-height: 1.5;">
+        Record payment received for: <br/>
+        <strong style="color: var(--teal);" id="pay-date-display">--</strong><br/>
+        Amount: <strong style="color: var(--teal);" id="pay-amount-display">--</strong>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-close-payment">Esc Cancel</button>
+        <button id="btn-confirm-payment" class="primary">Enter Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    
+    // Hardcoded Demo Accounts
+    const ACCOUNTS = [
+      { id: 1, name: "John Doe", address: "123 Main St, London", phone: "07712345678", symbol: "£", weeklyDue: 2.50 },
+      { id: 2, name: "Jane Smith", address: "45 Oak Lane, Manchester", phone: "07898765432", symbol: "£", weeklyDue: 4.20 },
+      { id: 3, name: "Bob Johnson", address: "78 High St, Edinburgh", phone: "07911223344", symbol: "£", weeklyDue: 1.80 }
+    ];
+
+    // State
+    let currentAccountIdx = 0;
+    let currentYear = 2026;
+    let selectedDate = null; // { year, month, day }
+    let activeModal = null; // 'options', 'payment', null
+
+    // Store: accountId_year_month_day -> { paid: boolean, amount: number }
+    const paymentStore = JSON.parse(localStorage.getItem('ledgerPayments')) || {};
+
+    const savePaymentStore = () => {
+      localStorage.setItem('ledgerPayments', JSON.stringify(paymentStore));
+    };
+
+    const getPaymentKey = (accId, y, m, d) => {
+      const padM = String(m + 1).padStart(2, '0');
+      const padD = String(d).padStart(2, '0');
+      return `${accId}_${y}_${padM}_${padD}`;
+    };
+
+    // DOM Elements
+    const elAcNo = document.getElementById('ac-no');
+    const elCName = document.getElementById('c-name');
+    const elCAddr = document.getElementById('c-addr');
+    const elCPhone = document.getElementById('c-phone');
+    const elTotalDue = document.getElementById('total-due');
+    const elYear = document.getElementById('year-display');
+    const elMonthsHeader = document.getElementById('months-header');
+    const elGridBody = document.getElementById('grid-body');
+    const elToast = document.getElementById('toast');
+
+    // Live Clock
+    setInterval(() => {
+      document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-GB');
+    }, 1000);
+
+    // Toast
+    let toastTimeout;
+    const showToast = (msg) => {
+      elToast.innerText = msg;
+      elToast.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => elToast.classList.remove('show'), 2500);
+    };
+
+    // Generate Calendar
+    const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+
+    const generateCalendarData = () => {
+      const acc = ACCOUNTS[currentAccountIdx];
+      const today = new Date();
+      const todayY = today.getFullYear();
+      const todayM = today.getMonth();
+      const todayD = today.getDate();
+
+      const grid = Array.from({ length: 6 }, () => new Array(12).fill(null));
+      let totalDue = 0;
+      let nearestFutureCell = null;
+
+      for (let m = 0; m < 12; m++) {
+        const daysInM = getDaysInMonth(currentYear, m);
+        let currentDay = 1; // independent cycle starting at 1
+        let row = 0;
+
+        while (currentDay <= daysInM && row < 6) {
+          const key = getPaymentKey(acc.id, currentYear, m, currentDay);
+          const record = paymentStore[key];
+          const isPaid = !!record?.paid;
+          
+          let status = 'past';
+          if (currentYear > todayY || (currentYear === todayY && m > todayM) || (currentYear === todayY && m === todayM && currentDay > todayD)) {
+            status = 'future';
+          }
+          if (currentYear === todayY && m === todayM && currentDay === todayD) {
+            status = 'today';
+          }
+
+          const cellData = {
+            day: currentDay,
+            month: m,
+            year: currentYear,
+            amount: acc.weeklyDue,
+            status,
+            isPaid,
+            key
+          };
+
+          grid[row][m] = cellData;
+
+          if (!isPaid && status !== 'future') {
+            totalDue += acc.weeklyDue;
+          }
+
+          if (status === 'future' && !nearestFutureCell) {
+             // naive nearest is just the first future date we hit in normal iteration
+             // but since we iterate columns first, we need to find the absolute closest.
+          }
+
+          currentDay += 7;
+          row++;
+        }
+      }
+
+      // Find nearest future date across all months for due-soon highlighting
+      let nearestTimestamp = Infinity;
+      for (let r=0; r<6; r++) {
+        for (let m=0; m<12; m++) {
+          const c = grid[r][m];
+          if (c && c.status === 'future') {
+            const ts = new Date(currentYear, m, c.day).getTime();
+            if (ts < nearestTimestamp) {
+              nearestTimestamp = ts;
+              nearestFutureCell = c;
+            }
+          }
+        }
+      }
+
+      return { grid, totalDue, nearestFutureCell };
+    };
+
+    const render = () => {
+      const acc = ACCOUNTS[currentAccountIdx];
+      elAcNo.innerText = acc.id;
+      elCName.innerText = acc.name;
+      elCAddr.innerText = acc.address;
+      elCPhone.innerText = acc.phone;
+      elYear.innerText = currentYear;
+
+      const { grid, totalDue, nearestFutureCell } = generateCalendarData();
+      elTotalDue.innerText = acc.symbol + totalDue.toFixed(2);
+      if (totalDue === 0) {
+        elTotalDue.style.background = 'var(--paid)';
+      } else {
+        elTotalDue.style.background = 'var(--total-red)';
+      }
+
+      // Render Headers (only once, but safe to redo)
+      elMonthsHeader.innerHTML = MONTHS.map(m => `<div class="month-title">${m}</div>`).join('');
+
+      // Render Grid
+      elGridBody.innerHTML = grid.map(rowArr => `
+        <div class="grid-row">
+          ${rowArr.map(cell => {
+            if (!cell) return `<div class="cell empty"></div>`;
+            
+            const isSelected = selectedDate && 
+                               selectedDate.year === cell.year && 
+                               selectedDate.month === cell.month && 
+                               selectedDate.day === cell.day;
+            
+            let cls = 'cell';
+            if (isSelected) cls += ' selected';
+            if (cell.status === 'future') cls += ' future';
+            if (cell === nearestFutureCell) cls += ' due-soon';
+
+            let valHtml = `<div class="date-amt">${acc.symbol}${cell.amount.toFixed(2)}</div>`;
+            if (cell.isPaid) {
+              cls += ' paid';
+              valHtml = `<div class="date-amt">✓ PAID</div>`;
+            }
+
+            return `
+              <div class="${cls}" data-y="${cell.year}" data-m="${cell.month}" data-d="${cell.day}">
+                <div class="date-num">${cell.day}</div>
+                ${valHtml}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `).join('');
+
+      // Attach click listeners to cells
+      document.querySelectorAll('.cell:not(.empty)').forEach(el => {
+        el.addEventListener('click', () => {
+          selectedDate = {
+            year: parseInt(el.dataset.y, 10),
+            month: parseInt(el.dataset.m, 10),
+            day: parseInt(el.dataset.d, 10)
+          };
+          render();
+        });
+      });
+    };
+
+    // Actions
+    const savePayment = (key, record) => {
+      paymentStore[key] = record;
+      savePaymentStore();
+      render();
+      showToast(`Payment saved for ${key}`);
+    };
+
+    const confirmPayment = () => {
+      if (!selectedDate) return;
+      const acc = ACCOUNTS[currentAccountIdx];
+      const key = getPaymentKey(acc.id, selectedDate.year, selectedDate.month, selectedDate.day);
+      savePayment(key, { paid: true, amount: acc.weeklyDue, ts: Date.now() });
+      closeModal();
+    };
+
+    // Modals
+    const openPaymentModal = () => {
+      if (!selectedDate) {
+        showToast("Select a date first!");
+        return;
+      }
+      const acc = ACCOUNTS[currentAccountIdx];
+      const mName = MONTHS[selectedDate.month];
+      document.getElementById('pay-date-display').innerText = `${selectedDate.day} ${mName} ${selectedDate.year}`;
+      document.getElementById('pay-amount-display').innerText = acc.symbol + acc.weeklyDue.toFixed(2);
+      document.getElementById('modal-payment').classList.add('active');
+      activeModal = 'payment';
+    };
+
+    const openOptionsModal = () => {
+      document.getElementById('modal-options').classList.add('active');
+      activeModal = 'options';
+    };
+
+    const closeModal = () => {
+      document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
+      activeModal = null;
+    };
+
+    // Navigation
+    const navAc = (dir) => {
+      currentAccountIdx = (currentAccountIdx + dir + ACCOUNTS.length) % ACCOUNTS.length;
+      render();
+    };
+    const navYr = (dir) => {
+      currentYear += dir;
+      render();
+    };
+
+    // Events
+    document.getElementById('btn-prev-ac').addEventListener('click', () => navAc(-1));
+    document.getElementById('btn-next-ac').addEventListener('click', () => navAc(1));
+    document.getElementById('btn-prev-yr').addEventListener('click', () => navYr(-1));
+    document.getElementById('btn-next-yr').addEventListener('click', () => navYr(1));
+
+    document.getElementById('btn-close-payment').addEventListener('click', closeModal);
+    document.getElementById('btn-confirm-payment').addEventListener('click', confirmPayment);
+    document.getElementById('btn-close-options').addEventListener('click', closeModal);
+
+    document.querySelectorAll('.modal-overlay').forEach(el => {
+      el.addEventListener('click', (e) => {
+        if (e.target === el) closeModal();
+      });
+    });
+
+    document.querySelectorAll('.menu-btn').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const actionMap = {
+          "1": "Record vouchers",
+          "2": "Preview statement",
+          "3": "Print statement",
+          "4": "Preview bill",
+          "5": "Print bill"
+        };
+        const key = e.target.dataset.key;
+        showToast(`Action: ${actionMap[key]} | A/c ${ACCOUNTS[currentAccountIdx].id}`);
+        console.log(`Executing ${actionMap[key]} for Account ${ACCOUNTS[currentAccountIdx].id}`);
+        closeModal();
+      });
+    });
+
+    // Keyboard
+    window.addEventListener('keydown', (e) => {
+      if (activeModal === 'options') {
+        if (e.key === 'Escape') closeModal();
+        if (['1','2','3','4','5'].includes(e.key)) {
+          document.querySelector(`.menu-btn[data-key="${e.key}"]`).click();
+        }
+        return;
+      }
+      
+      if (activeModal === 'payment') {
+        if (e.key === 'Escape') closeModal();
+        if (e.key === 'Enter') confirmPayment();
+        return;
+      }
+
+      if (e.key === 'Escape') {
+         if (selectedDate) {
+            selectedDate = null;
+            render();
+         }
+      } else if (e.key === 'F7') {
+        e.preventDefault();
+        openPaymentModal();
+      } else if (e.key === 'F9') {
+        e.preventDefault();
+        openOptionsModal();
+      } else if (e.key === 'F6') {
+        e.preventDefault();
+        showToast(`Action: Papers | A/c ${ACCOUNTS[currentAccountIdx].id}`);
+      } else if (e.key === 'F8') {
+        e.preventDefault();
+        showToast(`Action: Leave | A/c ${ACCOUNTS[currentAccountIdx].id}`);
+      } else if (e.key === 'ArrowLeft') {
+        navAc(-1);
+      } else if (e.key === 'ArrowRight') {
+        navAc(1);
+      } else if (e.key === 'PageUp') {
+        navYr(-1);
+      } else if (e.key === 'PageDown') {
+        navYr(1);
+      }
+    });
+
+    // Init
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+
+> newscard-frontend@2.1.0 build
+> vite build
+
+vite v6.4.2 building for production...
+transforming...
+✓ 8 modules transformed.
+✗ Build failed in 572ms
+error during build:
+[vite:esbuild] Transform failed with 1 error:
+/home/harshpandya/Desktop/Projects/newscard/frontend/src/pages/PaymentCalendar.jsx:162:23: ERROR: Syntax error "`"
+file: /home/harshpandya/Desktop/Projects/newscard/frontend/src/pages/PaymentCalendar.jsx:162:23
+
+Syntax error "`"
+160|        const m = month === 0 ? 12 : month;
+161|        const y = month === 0 ? year - 1 : year;
+162|        const dateStr = \`\${y}-\${String(m).padStart(2, '0')}-\${String(d).padStart(2, '0')}\`;
+   |                         ^
+163|        days.push({ day: d, dateStr, isCurrentMonth: false });
+164|      }
+
+    at failureErrorWithLog (/home/harshpandya/Desktop/Projects/newscard/frontend/node_modules/esbuild/lib/main.js:1467:15)
+    at /home/harshpandya/Desktop/Projects/newscard/frontend/node_modules/esbuild/lib/main.js:736:50
+    at responseCallbacks.<computed> (/home/harshpandya/Desktop/Projects/newscard/frontend/node_modules/esbuild/lib/main.js:603:9)
+    at handleIncomingPacket (/home/harshpandya/Desktop/Projects/newscard/frontend/node_modules/esbuild/lib/main.js:658:12)
+    at Socket.readFromStdout (/home/harshpandya/Desktop/Projects/newscard/frontend/node_modules/esbuild/lib/main.js:581:7)
+    at Socket.emit (node:events:517:28)
+    at addChunk (node:internal/streams/readable:368:12)
+    at readableAddChunk (node:internal/streams/readable:341:9)
+    at Readable.push (node:internal/streams/readable:278:10)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:190:23)
