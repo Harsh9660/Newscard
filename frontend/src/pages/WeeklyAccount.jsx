@@ -419,4 +419,4 @@ const FooterBar = ({ dirty, saving, onSave, onClose, onOpenCalendar, onQuickPay 
   <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-nc-panel/95 backdrop-blur-xl border-t border-nc-border p-4 z-20">
     {/* Footer buttons with keyboard hints */}
   </div>
-);
+);                                

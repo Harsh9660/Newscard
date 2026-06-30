@@ -37,15 +37,15 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
     const lines = [
       "═══ NEWSCARDS — Dashboard ═══",
       stats
-        ? \`Customers: \${stats.customer_count} | Publications: \${stats.product_count} | Rounds: \${stats.round_count}\`
+        ? `Customers: ${stats.customer_count} | Publications: ${stats.product_count} | Rounds: ${stats.round_count}`
         : "",
-      stats ? \`Outstanding: £\${stats.total_outstanding.toFixed(2)}\` : "",
+      stats ? `Outstanding: £${stats.total_outstanding.toFixed(2)}` : "",
       analytics
-        ? \`Avg price: £\${analytics.avg_product_price.toFixed(2)} | Catalog: £\${analytics.catalog_value.toFixed(2)}\`
+        ? `Avg price: £${analytics.avg_product_price.toFixed(2)} | Catalog: £${analytics.catalog_value.toFixed(2)}`
         : "",
-      \`Copied: \${new Date().toLocaleString()}\`,
+      `Copied: ${new Date().toLocaleString()}`,
     ].filter(Boolean);
-    navigator.clipboard.writeText(lines.join("\\n"));
+    navigator.clipboard.writeText(lines.join("\n"));
     onToast("Copied to clipboard");
   };
 
@@ -56,7 +56,7 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
         { label: "Delivery Rounds", value: stats.round_count, color: "text-indigo-400", nav: "rounds" },
         {
           label: "Outstanding Balance",
-          value: \`£\${stats.total_outstanding.toFixed(2)}\`,
+          value: `£${stats.total_outstanding.toFixed(2)}`,
           color: "text-rose-400",
           nav: "customers",
         },
@@ -68,7 +68,7 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
         },
         {
           label: "Avg Publication Price",
-          value: analytics ? \`£\${analytics.avg_product_price.toFixed(2)}\` : "—",
+          value: analytics ? `£${analytics.avg_product_price.toFixed(2)}` : "—",
           color: "text-purple-400",
           nav: "products",
         },
@@ -113,7 +113,7 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
               className="glass-card p-6 text-left group"
             >
               <div className="text-sm font-medium text-nc-muted uppercase tracking-wider mb-2 group-hover:text-white transition-colors">{c.label}</div>
-              <div className={\`font-display text-3xl font-bold \${c.color}\`}>{c.value}</div>
+              <div className={`font-display text-3xl font-bold ${c.color}`}>{c.value}</div>
             </button>
           ))}
         </div>
@@ -136,7 +136,7 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
                   title="Outstanding balance by round"
                   data={analytics.balance_by_round}
                   valuePrefix="£"
-                  formatValue={(v) => \`£\${Number(v).toFixed(2)}\`}
+                  formatValue={(v) => `£${Number(v).toFixed(2)}`}
                   accent="#f43f5e"
                 />
               </div>
@@ -196,7 +196,7 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
                   </li>
                   <li className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                     <span className="text-nc-muted">Unassigned Customers</span>
-                    <span className={\`font-bold \${analytics.unassigned_customers > 0 ? 'text-amber-400' : 'text-emerald-400'}\`}>
+                    <span className={`font-bold ${analytics.unassigned_customers > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
                       {analytics.unassigned_customers}
                     </span>
                   </li>
@@ -206,7 +206,7 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
                       <div className="w-24 h-2 bg-nc-panel rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-emerald-500 rounded-full" 
-                          style={{width: \`\${stats?.customer_count ? (((stats.customer_count - stats.customers_with_balance) / stats.customer_count) * 100) : 0}%\`}} 
+                          style={{width: `${stats?.customer_count ? (((stats.customer_count - stats.customers_with_balance) / stats.customer_count) * 100) : 0}%`}} 
                         />
                       </div>
                       <span className="font-bold text-white">

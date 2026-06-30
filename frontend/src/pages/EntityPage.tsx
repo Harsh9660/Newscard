@@ -13,6 +13,7 @@ interface Field {
   label: string;
   type?: string;
   options?: any[];
+  // Add other field props as needed
 }
 
 interface EntityPageProps {

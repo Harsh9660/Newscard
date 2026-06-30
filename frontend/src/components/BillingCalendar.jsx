@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 const styles = `
   .bc-container {
@@ -180,7 +181,7 @@ const styles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 500;
+    z-index: 999999;
     animation: fadeIn 200ms ease-out forwards;
   }
   
@@ -410,7 +411,7 @@ const SinglePaymentModal = ({ dateStr, amount, onConfirm, onCancel }) => {
     }
   }, []);
   
-  return (
+  return createPortal(
     <div 
       className="bc-modal-overlay"
       onClick={(e) => { if (e.target.className === 'bc-modal-overlay') onCancel(); }}
@@ -436,7 +437,8 @@ const SinglePaymentModal = ({ dateStr, amount, onConfirm, onCancel }) => {
           <button className="bc-btn confirm" onClick={onConfirm} autoFocus>Accept Payment</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -457,7 +459,7 @@ const PaymentSummaryModal = ({
     }
   }, []);
 
-  return (
+  return createPortal(
     <div 
       className="bc-modal-overlay" 
       onClick={(e) => { if (e.target.className === 'bc-modal-overlay') onCancel(); }}
@@ -505,7 +507,8 @@ const PaymentSummaryModal = ({
           <button className="bc-btn confirm" onClick={onConfirm} autoFocus>Accept Payment</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
