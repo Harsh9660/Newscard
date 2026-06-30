@@ -37,38 +37,38 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
     const lines = [
       "═══ NEWSCARDS — Dashboard ═══",
       stats
-        ? `Customers: ${stats.customer_count} | Publications: ${stats.product_count} | Rounds: ${stats.round_count}`
+        ? \`Customers: \${stats.customer_count} | Publications: \${stats.product_count} | Rounds: \${stats.round_count}\`
         : "",
-      stats ? `Outstanding: £${stats.total_outstanding.toFixed(2)}` : "",
+      stats ? \`Outstanding: £\${stats.total_outstanding.toFixed(2)}\` : "",
       analytics
-        ? `Avg price: £${analytics.avg_product_price.toFixed(2)} | Catalog: £${analytics.catalog_value.toFixed(2)}`
+        ? \`Avg price: £\${analytics.avg_product_price.toFixed(2)} | Catalog: £\${analytics.catalog_value.toFixed(2)}\`
         : "",
-      `Copied: ${new Date().toLocaleString()}`,
+      \`Copied: \${new Date().toLocaleString()}\`,
     ].filter(Boolean);
-    navigator.clipboard.writeText(lines.join("\n"));
+    navigator.clipboard.writeText(lines.join("\\n"));
     onToast("Copied to clipboard");
   };
 
   const cards = stats
     ? [
-        { label: "Customers", value: stats.customer_count, color: "text-cyan-400", nav: "customers" },
-        { label: "Publications", value: stats.product_count, color: "text-green-400", nav: "products" },
-        { label: "Delivery Rounds", value: stats.round_count, color: "text-blue-400", nav: "rounds" },
+        { label: "Customers", value: stats.customer_count, color: "text-blue-400", nav: "customers" },
+        { label: "Publications", value: stats.product_count, color: "text-emerald-400", nav: "products" },
+        { label: "Delivery Rounds", value: stats.round_count, color: "text-indigo-400", nav: "rounds" },
         {
           label: "Outstanding Balance",
-          value: `£${stats.total_outstanding.toFixed(2)}`,
-          color: "text-red-400",
+          value: \`£\${stats.total_outstanding.toFixed(2)}\`,
+          color: "text-rose-400",
           nav: "customers",
         },
         {
           label: "Customers Owing",
           value: stats.customers_with_balance,
-          color: "text-orange-400",
+          color: "text-amber-400",
           nav: "customers",
         },
         {
           label: "Avg Publication Price",
-          value: analytics ? `£${analytics.avg_product_price.toFixed(2)}` : "—",
+          value: analytics ? \`£\${analytics.avg_product_price.toFixed(2)}\` : "—",
           color: "text-purple-400",
           nav: "products",
         },
@@ -77,178 +77,190 @@ export default function Dashboard({ onNavigate, onHelp, onToast }) {
 
   const balanceSegments = analytics
     ? [
-        { label: "Paid up", value: analytics.balance_status.paid_up, color: "#2e7d32" },
-        { label: "Owing money", value: analytics.balance_status.owing, color: "#e94560" },
-        { label: "In credit", value: analytics.balance_status.credit, color: "#1565c0" },
+        { label: "Paid up", value: analytics.balance_status.paid_up, color: "#10b981" },
+        { label: "Owing money", value: analytics.balance_status.owing, color: "#f43f5e" },
+        { label: "In credit", value: analytics.balance_status.credit, color: "#3b82f6" },
       ]
     : [];
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-nc-border px-4 py-3">
-        <h1 className="text-lg font-bold tracking-wide text-nc-accent">
-          &gt; NEWSCARDS_DASHBOARD
-        </h1>
+    <div className="flex h-full flex-col w-full relative">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-nc-border px-6 py-5 gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-white">
+            Overview Dashboard
+          </h1>
+          <p className="text-sm text-nc-muted mt-1">Real-time metrics and financial overview</p>
+        </div>
         <button
           type="button"
           onClick={load}
-          className="rounded border border-nc-border px-3 py-1 text-xs hover:bg-nc-panel"
+          className="btn-primary flex items-center gap-2 whitespace-nowrap"
         >
-          ↻ Refresh (F5)
+          <span>↻</span> Refresh Data (F5)
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-4">
-        {loading && !stats && <p className="text-nc-muted">Loading...</p>}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8">
+        {loading && !stats && <p className="text-nc-muted animate-pulse">Loading dashboard data...</p>}
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {cards.map((c) => (
             <button
               key={c.label}
               type="button"
               onClick={() => onNavigate(c.nav)}
-              className="rounded-lg border border-nc-border bg-nc-card p-4 text-left transition hover:border-nc-accent"
+              className="glass-card p-6 text-left group"
             >
-              <div className="text-xs uppercase text-nc-muted">{c.label}</div>
-              <div className={`mt-2 text-2xl font-bold ${c.color}`}>{c.value}</div>
+              <div className="text-sm font-medium text-nc-muted uppercase tracking-wider mb-2 group-hover:text-white transition-colors">{c.label}</div>
+              <div className={\`font-display text-3xl font-bold \${c.color}\`}>{c.value}</div>
             </button>
           ))}
         </div>
 
         {analytics && (
-          <>
-            <h2 className="mb-3 mt-8 text-sm font-bold text-nc-accent">
-              &gt; ANALYTICS
+          <div className="mt-8 sm:mt-12">
+            <h2 className="font-display text-xl font-bold text-white mb-6">
+              Analytics & Insights
             </h2>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <BarChart
-                title="Customers per round"
-                data={analytics.customers_by_round}
-                accent="#22d3ee"
-              />
-              <BarChart
-                title="Outstanding balance by round"
-                data={analytics.balance_by_round}
-                valuePrefix="£"
-                formatValue={(v) => `£${Number(v).toFixed(2)}`}
-                accent="#e94560"
-              />
-              <BarChart
-                title="Publications by type"
-                data={analytics.products_by_type}
-                accent="#4ade80"
-              />
-              <DonutStat title="Customer payment status" segments={balanceSegments} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              <div className="glass-card p-6 overflow-hidden">
+                <BarChart
+                  title="Customers per round"
+                  data={analytics.customers_by_round}
+                  accent="#3b82f6"
+                />
+              </div>
+              <div className="glass-card p-6 overflow-hidden">
+                <BarChart
+                  title="Outstanding balance by round"
+                  data={analytics.balance_by_round}
+                  valuePrefix="£"
+                  formatValue={(v) => \`£\${Number(v).toFixed(2)}\`}
+                  accent="#f43f5e"
+                />
+              </div>
+              <div className="glass-card p-6 overflow-hidden">
+                <BarChart
+                  title="Publications by type"
+                  data={analytics.products_by_type}
+                  accent="#10b981"
+                />
+              </div>
+              <div className="glass-card p-6 overflow-hidden">
+                <DonutStat title="Customer payment status" segments={balanceSegments} />
+              </div>
             </div>
 
-            <div className="mt-4 grid gap-4 lg:grid-cols-2">
-              <div className="rounded-lg border border-nc-border bg-nc-card p-4">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-nc-muted">
-                  Top outstanding balances
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-24">
+              <div className="glass-card p-6">
+                <h3 className="font-display font-semibold text-lg text-white mb-4">
+                  Top Outstanding Balances
                 </h3>
                 {analytics.top_balances.length ? (
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-xs text-nc-muted">
-                        <th className="pb-2">Customer</th>
-                        <th className="pb-2 text-right">Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analytics.top_balances.map((row) => (
-                        <tr key={row.name} className="border-t border-nc-border/40">
-                          <td className="py-2">{row.name}</td>
-                          <td className="py-2 text-right font-semibold text-red-400">
-                            £{row.balance.toFixed(2)}
-                          </td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-xs uppercase tracking-wider text-nc-muted border-b border-nc-border">
+                          <th className="pb-3 font-medium">Customer</th>
+                          <th className="pb-3 font-medium text-right">Balance</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-nc-border/50">
+                        {analytics.top_balances.map((row) => (
+                          <tr key={row.name} className="hover:bg-white/5 transition-colors">
+                            <td className="py-3 font-medium">{row.name}</td>
+                            <td className="py-3 text-right font-bold text-rose-400">
+                              £{row.balance.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
-                  <p className="text-xs text-nc-muted">All customers are paid up.</p>
+                  <div className="flex items-center justify-center h-24 bg-white/5 rounded-lg border border-nc-border/50 border-dashed">
+                    <p className="text-sm text-nc-muted">All customers are paid up 🎉</p>
+                  </div>
                 )}
               </div>
 
-              <div className="rounded-lg border border-nc-border bg-nc-card p-4">
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-nc-muted">
-                  Quick insights
+              <div className="glass-card p-6">
+                <h3 className="font-display font-semibold text-lg text-white mb-4">
+                  Quick Insights
                 </h3>
-                <ul className="space-y-2 text-sm text-nc-muted">
-                  <li>
-                    <span className="text-nc-text font-semibold">Catalog value</span> (sum of
-                    publication prices):{" "}
-                    <span className="text-green-400">
-                      £{analytics.catalog_value.toFixed(2)}
-                    </span>
+                <ul className="space-y-4">
+                  <li className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                    <span className="text-nc-muted">Catalog Value <span className="text-xs ml-1 opacity-70">(Sum of prices)</span></span>
+                    <span className="font-bold text-emerald-400">£{analytics.catalog_value.toFixed(2)}</span>
                   </li>
-                  <li>
-                    <span className="text-nc-text font-semibold">Unassigned customers</span>{" "}
-                    (no delivery round):{" "}
-                    <span
-                      className={
-                        analytics.unassigned_customers > 0
-                          ? "text-orange-400"
-                          : "text-green-400"
-                      }
-                    >
+                  <li className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                    <span className="text-nc-muted">Unassigned Customers</span>
+                    <span className={\`font-bold \${analytics.unassigned_customers > 0 ? 'text-amber-400' : 'text-emerald-400'}\`}>
                       {analytics.unassigned_customers}
                     </span>
                   </li>
-                  <li>
-                    <span className="text-nc-text font-semibold">Collection rate</span>:{" "}
-                    {stats?.customer_count
-                      ? (
-                          ((stats.customer_count - stats.customers_with_balance) /
-                            stats.customer_count) *
-                          100
-                        ).toFixed(0)
-                      : 0}
-                    % of customers paid up
+                  <li className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                    <span className="text-nc-muted">Collection Rate</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-2 bg-nc-panel rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-500 rounded-full" 
+                          style={{width: \`\${stats?.customer_count ? (((stats.customer_count - stats.customers_with_balance) / stats.customer_count) * 100) : 0}%\`}} 
+                        />
+                      </div>
+                      <span className="font-bold text-white">
+                        {stats?.customer_count
+                          ? (((stats.customer_count - stats.customers_with_balance) / stats.customer_count) * 100).toFixed(0)
+                          : 0}%
+                      </span>
+                    </div>
                   </li>
                 </ul>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 
-      <ActionBar
-        left={["help"]}
-        center={["copy", "export"]}
-        right={[]}
-        handlers={{
-          help: onHelp,
-          copy: onCopy,
-          export_pdf: async () => {
-            try {
-              const r = await fetch("/api/export/pdf?entity=customers");
-              const d = await r.json();
-              onToast(d.message || "PDF saved to Desktop");
-            } catch (e) {
-              onToast(e.message, "error");
-            }
-          },
-          export_csv: async () => {
-            try {
-              const r = await fetch("/api/export/csv?entity=customers");
-              const d = await r.json();
-              onToast(d.message || "CSV saved to Desktop");
-            } catch (e) {
-              onToast(e.message, "error");
-            }
-          },
-          export_excel: async () => {
-            try {
-              const r = await fetch("/api/export/excel?entity=customers");
-              const d = await r.json();
-              onToast(d.message || "Excel saved to Desktop");
-            } catch (e) {
-              onToast(e.message, "error");
-            }
-          },
-        }}
-      />
+      <div className="fixed bottom-0 right-0 left-0 lg:left-64 bg-nc-bg/80 backdrop-blur-xl border-t border-nc-border p-2 sm:p-4 z-10 flex justify-end">
+        <ActionBar
+          left={["help"]}
+          center={["copy", "export"]}
+          right={[]}
+          handlers={{
+            help: onHelp,
+            copy: onCopy,
+            export_pdf: async () => {
+              try {
+                const r = await fetch("/api/export/pdf?entity=customers");
+                const d = await r.json();
+                onToast(d.message || "PDF saved to Desktop");
+              } catch (e) {
+                onToast(e.message, "error");
+              }
+            },
+            export_csv: async () => {
+              try {
+                const r = await fetch("/api/export/csv?entity=customers");
+                const d = await r.json();
+                onToast(d.message || "CSV saved to Desktop");
+              } catch (e) {
+                onToast(e.message, "error");
+              }
+            },
+            export_excel: async () => {
+              try {
+                const r = await fetch("/api/export/excel?entity=customers");
+                const d = await r.json();
+                onToast(d.message || "Excel saved to Desktop");
+              } catch (e) {
+                onToast(e.message, "error");
+              }
+            },
+          }}
+        />
+      </div>
     </div>
   );
 }

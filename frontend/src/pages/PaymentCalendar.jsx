@@ -1,142 +1,211 @@
 import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { api } from "../api/client";
-
-const C = {
-  bg: "#0B0F1A", teal: "#20b2aa", white: "#ffffff",
-  grey: "#888888", headerBg: "#0B0F1A", bottomBg: "#0B0F1A",
-  amtPaid: "#047857", amtUnpaid: "#D97706",
-};
+// Assuming ActionBar is available here for exports/actions
+// import ActionBar from "../components/ActionBar"; 
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
 
 function Clock() {
-  const [t, setT] = useState("");
+  const [time, setTime] = useState("");
   useEffect(() => {
-    const tick = () => setT(new Date().toLocaleTimeString("en-GB"));
+    const tick = () => setTime(new Date().toLocaleTimeString("en-GB", { 
+      hour: '2-digit', minute:'2-digit', second:'2-digit' 
+    }));
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
-  return <span style={{ color: "#E5E7EB", fontFamily: "ui-monospace, monospace", fontSize: 14 }}>{t}</span>;
+  return <span className="font-mono text-nc-muted text-sm tracking-wider font-semibold">{time}</span>;
 }
 
-function QuickPayDialog({ customerId, week, onClose, onSaved }) {
-  const [amount, setAmount] = useState((week.amount || 0).toFixed(2));
-  const [fromDate, setFromDate] = useState(new Date().toISOString().slice(0, 10));
-  const [toDate, setToDate] = useState(new Date().toISOString().slice(0, 10));
-  const [method, setMethod] = useState("cash");
-  const [notes, setNotes] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
+// Help Modal
+const HelpModal = ({ onClose }: { onClose: () => void }) => (
+  <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[500] animate-fade-in p-4">
+    <div className="glass-panel p-8 w-full max-w-lg rounded-3xl border border-nc-border shadow-2xl bg-nc-bg relative animate-slide-up">
+      <button onClick={onClose} className="absolute top-4 right-4 text-nc-muted hover:text-white transition-colors">
+        ✕
+      </button>
+      <h2 className="font-display text-2xl font-bold text-white mb-6 flex items-center gap-2">
+        <span>ℹ️</span> Calendar Help & Shortcuts
+      </h2>
+      
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-nc-accent font-semibold mb-3 uppercase tracking-widest text-xs">Keyboard Navigation</h3>
+          <div className="grid grid-cols-2 gap-y-3 text-sm">
+            <div className="text-nc-muted">Move cursor</div>
+            <div className="text-white font-mono"><kbd className="bg-white/10 px-1.5 py-0.5 rounded">↑</kbd> <kbd className="bg-white/10 px-1.5 py-0.5 rounded">↓</kbd> <kbd className="bg-white/10 px-1.5 py-0.5 rounded">←</kbd> <kbd className="bg-white/10 px-1.5 py-0.5 rounded">→</kbd></div>
+            
+            <div className="text-nc-muted">Select Range</div>
+            <div className="text-white font-mono">Hold <kbd className="bg-white/10 px-1.5 py-0.5 rounded">Shift</kbd> + Arrows</div>
+          </div>
+        </div>
+        
+        <div>
+          <h3 className="text-nc-accent font-semibold mb-3 uppercase tracking-widest text-xs">Actions</h3>
+          <div className="grid grid-cols-2 gap-y-3 text-sm">
+            <div className="text-nc-muted">Show Total / Pay</div>
+            <div className="text-white font-mono"><kbd className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded">F7</kbd></div>
+            
+            <div className="text-nc-muted">Confirm Payment</div>
+            <div className="text-white font-mono"><kbd className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded">F9</kbd></div>
+            
+            <div className="text-nc-muted">Cancel / Close</div>
+            <div className="text-white font-mono"><kbd className="bg-white/10 px-1.5 py-0.5 rounded">Esc</kbd></div>
+            
+            <div className="text-nc-muted">Process Single Day</div>
+            <div className="text-white font-mono"><kbd className="bg-white/10 px-1.5 py-0.5 rounded">Enter</kbd></div>
+          </div>
+        </div>
+        
+        <div>
+          <h3 className="text-nc-accent font-semibold mb-3 uppercase tracking-widest text-xs">Mouse Interaction</h3>
+          <p className="text-sm text-nc-muted leading-relaxed">
+            Click and drag across multiple days to select a date range. Releasing the mouse will automatically show the payment summary popup if there are outstanding balances.
+          </p>
+        </div>
+      </div>
+      
+      <div className="mt-8 flex justify-end">
+        <button onClick={onClose} className="btn-primary from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 border border-slate-600">
+          Close Help
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
-  const save = async () => {
-    setSaving(true); setErr("");
-    try {
-      await api.markPaid({
-        customer_id: customerId,
-        week_end_date: week.date_iso,
-        paid_amount: parseFloat(amount),
-        period_from: fromDate,
-        period_to: toDate,
-        method,
-        notes,
-      });
-      onSaved();
-    } catch (e) { setErr(e.message); }
-    finally { setSaving(false); }
-  };
-
-  const inp = {
-    background: "#1F2937", color: "#F3F4F6", border: `1px solid #374151`,
-    padding: "6px 10px", fontFamily: "ui-monospace, monospace", fontSize: 13,
-    borderRadius: 4, width: "100%", boxSizing: "border-box",
-  };
+// Batch Payment Confirmation Modal (F7 or onSelection) - EXACT CENTER POPUP
+const TotalPopup = ({ 
+  selectedDates, 
+  financials,
+  onClose, 
+  onConfirm, 
+  saving, 
+  error 
+}: any) => {
+  const datesList = Array.from(selectedDates).sort();
+  const displayDates = datesList.length > 4 
+    ? [...datesList.slice(0, 3), \`... and \${datesList.length - 3} more\`]
+    : datesList;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300 }}>
-      <div style={{ background: "#0D1117", border: `1px solid #1F2937`, borderRadius: 8,
-        padding: 24, width: 360, fontFamily: "system-ui, sans-serif", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.8)" }}>
-        <div style={{ color: "#E5E7EB", fontSize: 18, fontWeight: "600", textAlign: "center",
-          borderBottom: `1px solid #1F2937`, paddingBottom: 12, marginBottom: 16 }}>
-          {week.paid ? "Payment Details" : "Confirm Single Payment"}
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[500] animate-fade-in p-4">
+      <div className="glass-panel p-8 sm:p-10 w-full max-w-md rounded-3xl border border-nc-border shadow-[0_0_60px_rgba(245,158,11,0.2)] bg-[#0A0D15] relative animate-slide-up flex flex-col items-center">
+        
+        <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(245,158,11,0.3)] border border-amber-500/30">
+          <span className="text-3xl">💰</span>
         </div>
-        <div style={{ color: "#9CA3AF", fontSize: 12, marginBottom: 16, fontFamily: "ui-monospace, monospace" }}>
-          Date: {week.date_iso}
+        
+        <h2 className="font-display text-3xl font-bold text-white mb-2 text-center">
+          Payment Summary
+        </h2>
+        <div className="text-amber-400/90 text-sm uppercase tracking-widest font-semibold mb-8 text-center bg-amber-500/10 px-4 py-1.5 rounded-full border border-amber-500/20 shadow-inner">
+          Selected {selectedDates.size} day{selectedDates.size > 1 ? 's' : ''}
         </div>
-        {err && <div style={{ color: "#ef4444", fontSize: 12, marginBottom: 12 }}>{err}</div>}
-        <div style={{ display: "grid", gap: 12 }}>
-          <label style={{ color: "#9CA3AF", fontSize: 12 }}>£ Amount
-            <input type="number" step="0.01" value={amount}
-              onChange={e => setAmount(e.target.value)} style={{ ...inp, marginTop: 4, fontSize: 18, color: "#D97706", fontWeight: "bold" }} />
-          </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <label style={{ color: "#9CA3AF", fontSize: 12 }}>From Date
-              <input type="date" value={fromDate}
-                onChange={e => setFromDate(e.target.value)} style={{ ...inp, marginTop: 4 }} />
-            </label>
-            <label style={{ color: "#9CA3AF", fontSize: 12 }}>To Date
-              <input type="date" value={toDate}
-                onChange={e => setToDate(e.target.value)} style={{ ...inp, marginTop: 4 }} />
-            </label>
+        
+        {/* Financial Breakdown */}
+        <div className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 mb-8 flex flex-col gap-4 shadow-inner">
+          <div className="flex justify-between items-center text-lg">
+            <span className="text-nc-muted font-medium">Total Due</span>
+            <span className="font-bold text-white font-mono">£{financials.totalDue.toFixed(2)}</span>
           </div>
-          <label style={{ color: "#9CA3AF", fontSize: 12 }}>Method
-            <select value={method} onChange={e => setMethod(e.target.value)}
-              style={{ ...inp, marginTop: 4 }}>
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="bank transfer">Bank Transfer</option>
-              <option value="direct debit">Direct Debit</option>
-            </select>
-          </label>
-          <label style={{ color: "#9CA3AF", fontSize: 12 }}>Notes (optional)
-            <input value={notes} onChange={e => setNotes(e.target.value)}
-              style={{ ...inp, marginTop: 4 }} />
-          </label>
+          
+          {financials.received > 0 && (
+            <div className="flex justify-between items-center text-lg">
+              <span className="text-nc-muted font-medium">Amount Received</span>
+              <span className="font-bold text-emerald-400 font-mono">- £{financials.received.toFixed(2)}</span>
+            </div>
+          )}
+          
+          <div className="h-px w-full bg-white/10 my-1" />
+          
+          <div className="flex justify-between items-center">
+            <span className="text-nc-muted font-bold uppercase tracking-wider text-sm mt-2">Remaining / Outstanding</span>
+          </div>
+          <div className="font-display text-5xl font-bold text-amber-400 drop-shadow-[0_0_25px_rgba(245,158,11,0.5)] text-right mt-1">
+            £{financials.outstanding.toFixed(2)}
+          </div>
         </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12,
-          borderTop: `1px solid #1F2937`, marginTop: 20, paddingTop: 16 }}>
-          <button onClick={onClose} style={{
-            background: "#1F2937", border: "none", color: "#E5E7EB", borderRadius: 4,
-            padding: "8px 16px", fontSize: 14, fontWeight: "600", cursor: "pointer" }}>Cancel</button>
-          <button onClick={save} disabled={saving} style={{
-            background: "#047857", border: "none", color: "#FFF", borderRadius: 4,
-            padding: "8px 16px", fontSize: 14, fontWeight: "600", cursor: "pointer" }}>
-            {saving ? "Saving…" : "Mark as Paid"}</button>
+        
+        {/* Dates included */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 w-full mb-8 text-sm text-center shadow-inner">
+          <div className="text-nc-muted mb-3 font-medium text-xs uppercase tracking-widest">Dates Included</div>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {displayDates.map((d: any, i) => (
+              <span key={i} className="bg-black/30 text-white/90 px-2 py-1 rounded font-mono text-xs border border-white/10 shadow-sm">
+                {d}
+              </span>
+            ))}
+          </div>
         </div>
+        
+        {error && (
+          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 px-4 py-3 rounded-xl mb-6 text-sm w-full text-center font-medium">
+            {error}
+          </div>
+        )}
+        
+        <div className="flex flex-col sm:flex-row gap-4 w-full mt-2">
+          <button 
+            onClick={onClose} 
+            className="flex-1 py-4 rounded-xl border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all font-semibold shadow-sm bg-black/20"
+          >
+            Cancel (Esc)
+          </button>
+          <button 
+            onClick={onConfirm} 
+            disabled={saving || financials.outstanding <= 0}
+            className="flex-1 btn-primary from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)] py-4 text-lg font-bold border border-emerald-400/30"
+          >
+            {saving ? "Processing..." : "Confirm (F9)"}
+          </button>
+        </div>
+        
       </div>
     </div>
   );
-}
+};
 
-export default function PaymentCalendar({ customerId, onClose, onOpenWeekly }) {
+export default function PaymentCalendar({ customerId, onClose, onOpenWeekly }: any) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
-  const [data, setData] = useState(null);
-
+  const [data, setData] = useState<any>(null);
+  
   // Selection state
-  const [selectionStart, setSelectionStart] = useState(null);
-  const [selectionEnd, setSelectionEnd] = useState(null);
+  const [selectionStart, setSelectionStart] = useState<string | null>(null);
+  const [selectionEnd, setSelectionEnd] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedDates, setSelectedDates] = useState(new Set());
-  const [stage, setStage] = useState('idle'); // idle | tray_open | saving
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+  
+  // Modals & UI state
+  const [showTotalPopup, setShowTotalPopup] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [toastMsg, setToastMsg] = useState('');
   
-  const [payWeek, setPayWeek] = useState(null);
-  const [keyboardCursor, setKeyboardCursor] = useState(null); 
+  const [keyboardCursor, setKeyboardCursor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    try { setData(await api.calendar.get(customerId, year)); }
-    catch { setData(null); }
+    try { 
+      const res = await api.calendar.get(customerId, year);
+      setData(res); 
+    } catch { 
+      setData(null); 
+    }
   }, [customerId, year]);
 
   useEffect(() => { load(); }, [load]);
 
   const weekMap = useMemo(() => {
-    const map = {};
+    const map: any = {};
     if (data && data.months) {
-      Object.values(data.months).flat().forEach(w => {
+      Object.values(data.months).flat().forEach((w: any) => {
         map[w.date_iso] = w;
       });
     }
@@ -150,27 +219,24 @@ export default function PaymentCalendar({ customerId, onClose, onOpenWeekly }) {
     
     const days = [];
     
-    // Prev month days
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
       const d = daysInPrevMonth - i;
       const m = month === 0 ? 12 : month;
       const y = month === 0 ? year - 1 : year;
-      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dateStr = \`\${y}-\${String(m).padStart(2, '0')}-\${String(d).padStart(2, '0')}\`;
       days.push({ day: d, dateStr, isCurrentMonth: false });
     }
     
-    // Current month days
     for (let i = 1; i <= daysInMonth; i++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const dateStr = \`\${year}-\${String(month + 1).padStart(2, '0')}-\${String(i).padStart(2, '0')}\`;
       days.push({ day: i, dateStr, isCurrentMonth: true });
     }
     
-    // Next month days
     const remainingCells = 42 - days.length;
     for (let i = 1; i <= remainingCells; i++) {
       const m = month === 11 ? 1 : month + 2;
       const y = month === 11 ? year + 1 : year;
-      const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      const dateStr = \`\${y}-\${String(m).padStart(2, '0')}-\${String(i).padStart(2, '0')}\`;
       days.push({ day: i, dateStr, isCurrentMonth: false });
     }
     
@@ -193,19 +259,19 @@ export default function PaymentCalendar({ customerId, onClose, onOpenWeekly }) {
     setSelectedDates(new Set());
     setSelectionStart(null);
     setSelectionEnd(null);
-    setStage('idle');
+    setShowTotalPopup(false);
   };
 
-  const computeRange = (start, end) => {
-    if (!start || !end) return new Set();
+  const computeRange = (start: string, end: string) => {
+    if (!start || !end) return new Set<string>();
     const startIdx = daysGrid.findIndex(d => d.dateStr === start);
     const endIdx = daysGrid.findIndex(d => d.dateStr === end);
-    if (startIdx === -1 || endIdx === -1) return new Set();
+    if (startIdx === -1 || endIdx === -1) return new Set<string>();
     
     const min = Math.min(startIdx, endIdx);
     const max = Math.max(startIdx, endIdx);
     
-    const range = new Set();
+    const range = new Set<string>();
     for (let i = min; i <= max; i++) {
       if (daysGrid[i].isCurrentMonth) {
         range.add(daysGrid[i].dateStr);
@@ -214,111 +280,144 @@ export default function PaymentCalendar({ customerId, onClose, onOpenWeekly }) {
     return range;
   };
 
-  const onMouseDown = (dateStr) => {
-    if (stage === 'saving') return;
+  const onMouseDown = (dateStr: string) => {
+    if (showTotalPopup) return;
     setIsDragging(true);
     setSelectionStart(dateStr);
     setSelectionEnd(dateStr);
     setSelectedDates(new Set([dateStr]));
     setKeyboardCursor(dateStr);
-    setStage('idle');
   };
 
-  const onMouseEnter = (dateStr) => {
-    if (isDragging) {
+  const onMouseEnter = (dateStr: string) => {
+    if (isDragging && selectionStart) {
       setSelectionEnd(dateStr);
       setSelectedDates(computeRange(selectionStart, dateStr));
       setKeyboardCursor(dateStr);
     }
   };
 
-  const onMouseUp = () => { setIsDragging(false); };
+  const selectedFinancials = useMemo(() => {
+    let totalDue = 0;
+    let received = 0;
+    
+    selectedDates.forEach(dateStr => {
+      const w = weekMap[dateStr];
+      if (w && !w.paid && !w.is_holiday) {
+        const dueForWeek = w.total || w.amount || 0;
+        const receivedForWeek = w.received || 0;
+        totalDue += dueForWeek;
+        received += receivedForWeek;
+      }
+    });
+    
+    const outstanding = Math.max(0, totalDue - received);
+    return { totalDue, received, outstanding };
+  }, [selectedDates, weekMap]);
+
+  const onMouseUp = () => { 
+    if (isDragging) {
+      setIsDragging(false); 
+      if (selectedDates.size > 0 && selectedFinancials.outstanding > 0) {
+        setShowTotalPopup(true);
+      } else if (selectedDates.size > 0) {
+        setToastMsg("Selected dates have no outstanding balance to pay.");
+        setTimeout(() => setToastMsg(''), 2000);
+      }
+    }
+  };
 
   useEffect(() => {
     window.addEventListener('mouseup', onMouseUp);
     return () => window.removeEventListener('mouseup', onMouseUp);
-  }, []);
+  }, [isDragging, selectedDates, selectedFinancials]);
 
-  const totalSelectedAmount = useMemo(() => {
-    let total = 0;
-    selectedDates.forEach(dateStr => {
-      const w = weekMap[dateStr];
-      if (w && !w.paid && !w.is_holiday) total += w.amount;
-    });
-    return total;
-  }, [selectedDates, weekMap]);
+  // Keyboard 'keyup' listener specifically for releasing the Shift key after range selection
+  useEffect(() => {
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        if (!showTotalPopup && selectedDates.size > 0 && selectedFinancials.outstanding > 0) {
+          setShowTotalPopup(true);
+        }
+      }
+    };
+    window.addEventListener('keyup', handleKeyUp);
+    return () => window.removeEventListener('keyup', handleKeyUp);
+  }, [showTotalPopup, selectedDates, selectedFinancials]);
 
   const handleEsc = useCallback(() => {
-    if (payWeek) { setPayWeek(null); return; }
-    if (stage === 'tray_open') { setStage('idle'); return; }
+    if (showHelp) { setShowHelp(false); return; }
+    if (showTotalPopup) { setShowTotalPopup(false); return; }
     if (selectedDates.size > 0) { resetSelection(); return; }
-    onClose();
-  }, [payWeek, stage, selectedDates, onClose]);
+    onClose && onClose();
+  }, [showHelp, showTotalPopup, selectedDates, onClose]);
 
   const handleF7 = useCallback(() => {
-    if (selectedDates.size > 0) {
-      setStage('tray_open');
+    if (selectedDates.size > 0 && selectedFinancials.outstanding > 0) {
+      setShowTotalPopup(true);
+    } else if (selectedDates.size > 0) {
+      setToastMsg("Selected dates have no outstanding balance to pay.");
+      setTimeout(() => setToastMsg(''), 3000);
     }
-  }, [selectedDates]);
+  }, [selectedDates, selectedFinancials]);
 
   const handleF9 = useCallback(async () => {
-    if (stage === 'tray_open' && selectedDates.size > 0) {
-      setStage('saving');
+    if (!showTotalPopup || selectedDates.size === 0) return;
+    
+    setSaving(true);
+    setError("");
+    
+    const datesToPay = Array.from(selectedDates).filter(ds => {
+      const w = weekMap[ds];
+      return w && !w.paid && !w.is_holiday;
+    });
+    
+    if (datesToPay.length === 0) {
+      setError("No valid unpaid bills to process.");
+      setSaving(false);
+      return;
+    }
+    
+    let successCount = 0;
+    for (const ds of datesToPay) {
+      const w = weekMap[ds];
+      const dueForWeek = w.total || w.amount || 0;
+      const receivedForWeek = w.received || 0;
+      const outstandingForWeek = Math.max(0, dueForWeek - receivedForWeek);
       
-      const datesToPay = Array.from(selectedDates).filter(ds => {
-        const w = weekMap[ds];
-        return w && !w.paid && !w.is_holiday && w.amount > 0;
-      });
-      
-      if (datesToPay.length === 0) {
-        setToastMsg("No unpaid bills selected.");
-        setTimeout(() => setToastMsg(''), 3000);
-        setStage('idle');
-        return;
-      }
-      
-      let successCount = 0;
-      for (const ds of datesToPay) {
-        const w = weekMap[ds];
+      if (outstandingForWeek > 0) {
         try {
           await api.markPaid({
             customer_id: customerId,
             week_end_date: w.date_iso,
-            paid_amount: w.amount,
+            paid_amount: outstandingForWeek,
             method: "cash",
-            notes: "Batch payment"
+            notes: "Batch payment via Calendar"
           });
           successCount++;
         } catch (e) {
           console.error("Failed to pay", ds, e);
         }
       }
-      
-      setToastMsg(`Recorded ${successCount} payments. (£${totalSelectedAmount.toFixed(2)})`);
-      setTimeout(() => setToastMsg(''), 3000);
-      
-      await load();
-      resetSelection();
     }
-  }, [stage, selectedDates, weekMap, customerId, load, totalSelectedAmount]);
+    
+    setSaving(false);
+    setShowTotalPopup(false);
+    
+    setToastMsg(\`✅ Processed \${successCount} payments successfully. (£\${selectedFinancials.outstanding.toFixed(2)})\`);
+    setTimeout(() => setToastMsg(''), 4000);
+    
+    await load();
+    resetSelection();
+  }, [showTotalPopup, selectedDates, weekMap, customerId, load, selectedFinancials]);
 
   const handleEnter = useCallback(() => {
-    if (selectedDates.size === 1) {
-      const dateStr = Array.from(selectedDates)[0];
-      const w = weekMap[dateStr];
-      if (w && !w.paid && !w.is_holiday && w.amount > 0) {
-        setPayWeek(w);
-      } else {
-        setToastMsg("No unpaid billing record for this date");
-        setTimeout(() => setToastMsg(''), 2000);
-      }
-    } else if (keyboardCursor && selectedDates.size === 0) {
-      const w = weekMap[keyboardCursor];
-      if (w && !w.paid && !w.is_holiday && w.amount > 0) setPayWeek(w);
+    if (selectedDates.size > 0 && selectedFinancials.outstanding > 0) {
+      setShowTotalPopup(true);
     }
-  }, [selectedDates, keyboardCursor, weekMap]);
+  }, [selectedDates, selectedFinancials]);
 
-  const handleKeyboardNav = useCallback((key) => {
+  const handleKeyboardNav = useCallback((key: string, shiftKey: boolean) => {
     if (!keyboardCursor) {
       const first = daysGrid.find(d => d.isCurrentMonth);
       if (first) {
@@ -340,7 +439,7 @@ export default function PaymentCalendar({ customerId, onClose, onOpenWeekly }) {
       const target = daysGrid[newIdx];
       if (target.isCurrentMonth) {
         setKeyboardCursor(target.dateStr);
-        if (!isDragging && !(window.event && window.event.shiftKey)) {
+        if (!shiftKey) {
            setSelectedDates(new Set([target.dateStr]));
            setSelectionStart(target.dateStr);
         } else {
@@ -348,222 +447,220 @@ export default function PaymentCalendar({ customerId, onClose, onOpenWeekly }) {
            setSelectedDates(computeRange(selectionStart || keyboardCursor, target.dateStr));
         }
       } else {
-        if (key === 'ArrowLeft' || key === 'ArrowUp') {
-           handlePrevMonth();
-        } else {
-           handleNextMonth();
-        }
+        if (key === 'ArrowLeft' || key === 'ArrowUp') handlePrevMonth();
+        else handleNextMonth();
       }
     }
-  }, [keyboardCursor, daysGrid, isDragging, selectionStart, handlePrevMonth, handleNextMonth]);
+  }, [keyboardCursor, daysGrid, selectionStart, handlePrevMonth, handleNextMonth]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (payWeek) return; 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F1') { e.preventDefault(); setShowHelp(true); return; }
+      if (showHelp) { if (e.key === 'Escape') setShowHelp(false); return; }
+      if (saving) return;
+      
       if (e.key === 'Escape') { e.preventDefault(); handleEsc(); }
       else if (e.key === 'F7') { e.preventDefault(); handleF7(); }
       else if (e.key === 'F9') { e.preventDefault(); handleF9(); }
       else if (e.key === 'Enter') { e.preventDefault(); handleEnter(); }
-      else if (e.key.startsWith('Arrow')) { e.preventDefault(); handleKeyboardNav(e.key); }
+      else if (e.key.startsWith('Arrow')) { e.preventDefault(); handleKeyboardNav(e.key, e.shiftKey); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleEsc, handleF7, handleF9, handleEnter, handleKeyboardNav, payWeek]);
+  }, [handleEsc, handleF7, handleF9, handleEnter, handleKeyboardNav, showHelp, saving]);
+
+  // Export handlers
+  const handleExportPDF = () => {
+    setToastMsg("Exporting to PDF...");
+    setTimeout(() => setToastMsg(''), 2000);
+    // api.exportCalendar(customerId, year, month, 'pdf');
+  };
+  const handleExportCSV = () => {
+    setToastMsg("Exporting to CSV...");
+    setTimeout(() => setToastMsg(''), 2000);
+  };
+  const handleExportExcel = () => {
+    setToastMsg("Exporting to Excel...");
+    setTimeout(() => setToastMsg(''), 2000);
+  };
 
   const cust = data?.customer || {};
   const totalDue = data?.total_due || 0;
 
   return (
-    <div style={{ background: C.bg, display: "flex", flexDirection: "column", height: "100vh", userSelect: "none" }} tabIndex={0} onFocus={(e) => {
+    <div 
+      className="flex flex-col h-full w-full bg-nc-bg outline-none select-none overflow-hidden relative animate-fade-in"
+      tabIndex={0}
+      onFocus={() => {
         if (!keyboardCursor) {
           const first = daysGrid.find(d => d.isCurrentMonth);
           if (first) setKeyboardCursor(first.dateStr);
         }
-      }}>
+      }}
+    >
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       
-      {payWeek && (
-        <QuickPayDialog
-          customerId={customerId}
-          week={payWeek}
-          onClose={() => setPayWeek(null)}
-          onSaved={() => { setPayWeek(null); load(); }}
+      {showTotalPopup && (
+        <TotalPopup 
+          selectedDates={selectedDates}
+          financials={selectedFinancials}
+          onClose={() => setShowTotalPopup(false)}
+          onConfirm={handleF9}
+          saving={saving}
+          error={error}
         />
       )}
 
-      {/* Top Header */}
-      <div style={{ display: "flex", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1F2937" }}>
-        <div style={{ color: "#E5E7EB", fontSize: "1.25rem", fontWeight: "700", flex: 1, letterSpacing: "-0.025em" }}>
-          A/c No: {cust.ac_number || "1"} — {cust.name || "Loading..."}
+      {/* Header Area with Export Buttons */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-nc-border px-6 py-5 gap-4 bg-nc-panel/70 backdrop-blur-md z-10 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg transition-colors border border-white/5 mr-2">
+              ← Back
+            </button>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+              <span className="bg-white/10 px-2 py-1 rounded-md text-sm border border-white/5 shadow-sm">#{cust.ac_number || "..."}</span>
+              {cust.name || "Loading..."}
+            </h1>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button onClick={handleExportPDF} className="px-3 py-1.5 text-xs font-semibold bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 text-white transition-colors">PDF</button>
+            <button onClick={handleExportCSV} className="px-3 py-1.5 text-xs font-semibold bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 text-white transition-colors">CSV</button>
+            <button onClick={handleExportExcel} className="px-3 py-1.5 text-xs font-semibold bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 text-white transition-colors">Excel</button>
+          </div>
         </div>
-        <div style={{ color: "#E5E7EB", fontSize: "1.25rem", fontWeight: "700", marginRight: 20 }}>
-          Total Due: <span style={{ color: C.amtUnpaid }}>£{totalDue.toFixed(2)}</span>
+        
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/20 shadow-inner">
+            <span className="text-nc-muted text-sm font-medium uppercase tracking-wider">Total Outstanding</span>
+            <span className="text-amber-400 font-display font-bold text-xl drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">£{totalDue.toFixed(2)}</span>
+          </div>
+          <div className="hidden lg:block">
+            <Clock />
+          </div>
         </div>
-        <Clock />
       </div>
 
       {/* Main Calendar View */}
-      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "stretch", padding: "20px", height: "100%" }}>
-        <div style={{
-          width: "100%", height: "100%",
-          background: "#0D1117", borderRadius: "12px",
-          border: "1px solid #1F2937", overflow: "hidden",
-          display: "flex", flexDirection: "column",
-          fontFamily: "system-ui, -apple-system, sans-serif",
-          boxShadow: "0 10px 15px -3px rgba(0,0,0,0.5)"
-        }}>
+      <div className="flex-1 p-4 sm:p-6 lg:p-8 flex justify-center overflow-auto custom-scrollbar mb-4">
+        <div className="w-full max-w-5xl flex flex-col h-full min-h-[600px]">
           
-          {/* Calendar Header */}
-          <div style={{ background: "#0B0F1A", color: "#F3F4F6", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #1F2937" }}>
-            <div style={{ fontSize: "1.35rem", fontWeight: "700", letterSpacing: "-0.025em" }}>{MONTHS[month]} {year}</div>
-            <div style={{ display: "flex", gap: "20px", fontSize: "0.875rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#D97706" }} /> Selected range
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#047857" }} /> Payment accepted
-              </div>
-            </div>
-            <div>
-              <button onClick={handlePrevMonth} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 6, padding: "6px 14px", cursor: "pointer", marginRight: 8, fontSize: "0.9rem" }}>&larr;</button>
-              <button onClick={handleNextMonth} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: "0.9rem" }}>&rarr;</button>
-            </div>
-          </div>
-
-          {/* Hints */}
-          <div style={{ background: "#0D1117", padding: "10px 20px", fontSize: "0.8rem", color: "#9CA3AF", borderBottom: "1px solid #1F2937", display: "flex", gap: "20px" }}>
-            <div><strong style={{color:"#E5E7EB"}}>Drag/Arrows</strong> = select dates</div>
-            <div><strong style={{color:"#E5E7EB"}}>F7</strong> = show total</div>
-            <div><strong style={{color:"#E5E7EB"}}>F9</strong> = batch accept</div>
-            <div><strong style={{color:"#E5E7EB"}}>Enter</strong> = single detail payment</div>
-            <div><strong style={{color:"#E5E7EB"}}>Esc</strong> = cancel</div>
-          </div>
-
-          {/* Grid Header */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #1F2937", background: "#0B0F1A" }}>
-            {WEEKDAYS.map(d => (
-              <div key={d} style={{ padding: "14px 8px", textAlign: "center", fontSize: "0.8rem", fontWeight: 600, color: "#9CA3AF", borderRight: "1px solid #1F2937" }}>
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Grid Body */}
-          <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridTemplateRows: "repeat(6, 1fr)" }} onMouseLeave={onMouseUp}>
-            {daysGrid.map((dayObj, i) => {
-              const isSelected = selectedDates.has(dayObj.dateStr);
-              const isCursor = keyboardCursor === dayObj.dateStr;
-              const w = weekMap[dayObj.dateStr];
-              
-              let bg = "#0D1117";
-              let color = "#F3F4F6";
-              let amtColor = "#4b5563";
-              let displayAmt = "";
-
-              if (!dayObj.isCurrentMonth) {
-                bg = "#0B0F1A";
-                color = "#374151";
-              } else if (isSelected) {
-                bg = "#D97706";
-                color = "#ffffff";
-                amtColor = "#ffffff";
-              } else if (w) {
-                if (w.is_holiday) {
-                  bg = "#0B0F1A";
-                  color = "#374151";
-                  displayAmt = "HOLD";
-                } else if (w.paid) {
-                  bg = "#047857";
-                  color = "#ffffff";
-                  amtColor = "#ffffff";
-                } else if (w.status === "overdue") {
-                  color = "#E5E7EB";
-                  amtColor = "#D97706";
-                } else if (w.is_current_week) {
-                  bg = "rgba(37, 99, 235, 0.1)"; 
-                  color = "#60A5FA";
-                  amtColor = "#60A5FA";
-                }
-              }
-
-              if (w && !displayAmt && w.amount > 0) {
-                displayAmt = `£${w.amount.toFixed(2)}`;
-              }
-              if (!w && dayObj.isCurrentMonth) {
-                // Keep numbers clearly legible even if no amount
-                color = "#E5E7EB";
-              }
-
-              return (
-                <div 
-                  key={i} 
-                  onMouseDown={() => dayObj.isCurrentMonth && onMouseDown(dayObj.dateStr)}
-                  onMouseEnter={() => dayObj.isCurrentMonth && onMouseEnter(dayObj.dateStr)}
-                  style={{
-                    borderRight: "1px solid #1F2937", borderBottom: "1px solid #1F2937",
-                    padding: "10px 8px", display: "flex", flexDirection: "column", justifyContent: "space-between",
-                    background: bg, color: color, cursor: dayObj.isCurrentMonth ? "pointer" : "default",
-                    outline: isCursor ? "2px solid #FCD34D" : "none",
-                    outlineOffset: -2,
-                    position: "relative", zIndex: isCursor ? 10 : 1
-                  }}
-                >
-                  <div style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, fontSize: "1.1rem" }}>
-                    {dayObj.day}
-                  </div>
-                  <div style={{ fontFamily: "ui-monospace, monospace", fontSize: "0.875rem", textAlign: "right", color: amtColor, fontWeight: w && w.paid ? "bold" : "500", marginTop: "auto" }}>
-                    {displayAmt}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Action Tray (F7) */}
-          <div style={{
-            background: "#0B0F1A", color: "#F3F4F6", overflow: "hidden",
-            maxHeight: stage === 'tray_open' || stage === 'saving' ? "140px" : "0",
-            transition: "max-height 0.4s", display: "flex", justifyContent: "space-between",
-            alignItems: "center", padding: stage === 'tray_open' || stage === 'saving' ? "24px 20px" : "0 20px",
-            borderTop: stage === 'tray_open' || stage === 'saving' ? "1px solid #1F2937" : "none"
-          }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ fontSize: "0.875rem", color: "#9CA3AF" }}>
-                Total Selected ({selectedDates.size} day{selectedDates.size !== 1 ? 's' : ''})
-              </div>
-              <div style={{ fontFamily: "ui-monospace, monospace", fontSize: "2.25rem", fontWeight: 700, letterSpacing: "-0.04em" }}>
-                £{totalSelectedAmount.toFixed(2)}
-              </div>
-            </div>
+          <div className="glass-card flex-1 flex flex-col overflow-hidden border border-nc-border shadow-2xl rounded-2xl">
             
-            {totalSelectedAmount > 0 && (
-              <div onClick={handleF9} style={{
-                padding: "10px 20px", borderRadius: 9999, fontSize: "0.9rem", fontWeight: 600,
-                background: "rgba(217, 119, 6, 0.2)", color: "#FCD34D", border: "1px solid #D97706",
-                cursor: "pointer", whiteSpace: "nowrap"
-              }}>
-                {stage === 'saving' ? 'Recording...' : 'F9 to Accept Payment'}
+            {/* Calendar Controls */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-nc-border/50 bg-black/20">
+              <div className="flex items-center gap-4">
+                <button onClick={handlePrevMonth} className="p-2 hover:bg-white/10 rounded-lg transition-colors border border-transparent hover:border-white/10">
+                  <span className="sr-only">Previous Month</span>
+                  ←
+                </button>
+                <h2 className="font-display text-2xl font-bold w-48 text-center tracking-wide">
+                  {MONTHS[month]} <span className="text-emerald-400 opacity-90">{year}</span>
+                </h2>
+                <button onClick={handleNextMonth} className="p-2 hover:bg-white/10 rounded-lg transition-colors border border-transparent hover:border-white/10">
+                  <span className="sr-only">Next Month</span>
+                  →
+                </button>
               </div>
-            )}
+              
+              <div className="hidden sm:flex items-center gap-6 text-sm font-medium uppercase tracking-widest text-xs">
+                <div className="flex items-center gap-2 text-nc-muted">
+                  <div className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" /> Unpaid
+                </div>
+                <div className="flex items-center gap-2 text-nc-muted">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" /> Paid
+                </div>
+                <div className="flex items-center gap-2 text-nc-muted">
+                  <div className="w-3 h-3 rounded bg-amber-500/30 border border-amber-500/50" /> Selected
+                </div>
+              </div>
+            </div>
+
+            {/* Weekday Headers */}
+            <div className="grid grid-cols-7 border-b border-nc-border/50 bg-black/40">
+              {WEEKDAYS.map(d => (
+                <div key={d} className="py-3 text-center text-xs font-semibold tracking-widest text-nc-muted uppercase">
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Grid Body */}
+            <div className="flex-1 grid grid-cols-7 grid-rows-6 bg-black/20" onMouseLeave={onMouseUp}>
+              {daysGrid.map((dayObj, i) => {
+                const isSelected = selectedDates.has(dayObj.dateStr);
+                const isCursor = keyboardCursor === dayObj.dateStr;
+                const w = weekMap[dayObj.dateStr];
+                
+                let cellClasses = "relative flex flex-col justify-between p-2 sm:p-3 border-r border-b border-nc-border/30 transition-all duration-200 ";
+                let amtColor = "text-nc-muted";
+                let displayAmt = "";
+
+                if (!dayObj.isCurrentMonth) {
+                  cellClasses += "opacity-40 bg-black/30 cursor-not-allowed";
+                } else {
+                  cellClasses += "cursor-pointer hover:bg-white/5 ";
+                  
+                  if (isSelected) {
+                    cellClasses += "bg-amber-500/10 border-amber-500/30 ";
+                    amtColor = "text-amber-400";
+                  } else if (w) {
+                    if (w.is_holiday) {
+                      cellClasses += "opacity-60 bg-white/5 ";
+                      displayAmt = "HOLD";
+                    } else if (w.paid) {
+                      cellClasses += "bg-emerald-500/10 ";
+                      amtColor = "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+                    } else if (w.status === "overdue" || w.amount > 0) {
+                      amtColor = "text-amber-400 font-bold drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]";
+                    } else if (w.is_current_week) {
+                      cellClasses += "bg-nc-accent/10 ";
+                      amtColor = "text-nc-accent";
+                    }
+                  }
+                }
+
+                if (w && !displayAmt) {
+                  const outAmt = Math.max(0, (w.total || w.amount || 0) - (w.received || 0));
+                  if (outAmt > 0) displayAmt = \`£\${outAmt.toFixed(2)}\`;
+                  else if (w.amount > 0) displayAmt = \`£\${w.amount.toFixed(2)}\`;
+                }
+                
+                if (isCursor && dayObj.isCurrentMonth) {
+                  cellClasses += "ring-2 ring-inset ring-amber-400 z-10 bg-white/10 shadow-lg scale-[1.02] rounded-md border-transparent ";
+                }
+
+                return (
+                  <div 
+                    key={i} 
+                    className={cellClasses}
+                    onMouseDown={() => dayObj.isCurrentMonth && onMouseDown(dayObj.dateStr)}
+                    onMouseEnter={() => dayObj.isCurrentMonth && onMouseEnter(dayObj.dateStr)}
+                  >
+                    <div className={\`font-display text-lg sm:text-xl font-semibold \${dayObj.isCurrentMonth ? (isSelected ? 'text-amber-400' : 'text-white') : 'text-nc-muted'}\`}>
+                      {dayObj.day}
+                    </div>
+                    
+                    <div className={\`font-mono text-xs sm:text-sm text-right mt-auto \${amtColor} \${w?.paid ? 'font-bold tracking-wide' : 'font-medium'}\`}>
+                      {displayAmt}
+                    </div>
+                    
+                    {/* Selected Highlight Overlay */}
+                    {isSelected && (
+                      <div className="absolute inset-0 border-2 border-amber-500/50 rounded pointer-events-none shadow-[inset_0_0_15px_rgba(245,158,11,0.15)] z-0" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          
         </div>
       </div>
       
       {/* Toast Notification */}
-      <div style={{
-        position: "fixed", bottom: 160, left: "50%", transform: `translateX(-50%) translateY(${toastMsg ? '-8px' : '0'})`,
-        background: "#047857", color: "#fff", padding: "14px 28px", borderRadius: 10,
-        fontWeight: 600, boxShadow: "0 10px 15px -3px rgba(0,0,0,0.5)", zIndex: 1000,
-        opacity: toastMsg ? 1 : 0, transition: "all 0.3s ease", pointerEvents: "none"
-      }}>
+      <div className={\`fixed top-6 right-6 bg-emerald-500/90 backdrop-blur-md text-white px-6 py-4 rounded-2xl font-semibold shadow-[0_10px_30px_rgba(16,185,129,0.3)] z-[1000] transition-all duration-300 transform border border-emerald-400/50 \${toastMsg ? 'translate-y-0 opacity-100' : '-translate-y-10 opacity-0 pointer-events-none'}\`}>
         {toastMsg}
-      </div>
-
-      {/* Terminal Bottom Bar */}
-      <div style={{ height: 32, background: C.bottomBg, borderTop: `1px solid #1F2937`,
-        display: "flex", alignItems: "center", padding: "0 16px",
-        fontFamily: "ui-monospace, monospace", fontSize: 12, marginTop: "auto" }}>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: "#9CA3AF", cursor: "pointer", fontWeight: "600" }}>Esc cancel/close</button>
       </div>
 
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 const styles = `
   .bc-container {
@@ -171,134 +171,178 @@ const styles = `
     color: #374151;
   }
 
-  .bc-tray {
-    background: #0B0F1A;
-    color: #F3F4F6;
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 0 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .bc-tray.open {
-    max-height: 140px;
-    padding: 24px 20px;
-    border-top: 1px solid #1F2937;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .bc-tray {
-      transition: none;
-    }
-  }
-
-  .bc-tray-total {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .bc-tray-label {
-    font-size: 0.875rem;
-    color: #9CA3AF;
-  }
-
-  .bc-tray-value {
-    font-family: ui-monospace, 'JetBrains Mono', Menlo, Monaco, Consolas, monospace;
-    font-size: 2.25rem;
-    font-weight: 700;
-    letter-spacing: -0.04em;
-  }
-
-  .bc-status-pill {
-    padding: 10px 20px;
-    border-radius: 9999px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-    background: rgba(217, 119, 6, 0.2);
-    color: #FCD34D;
-    border: 1px solid #D97706;
-    cursor: pointer;
-  }
-  .bc-status-pill:hover {
-    background: rgba(217, 119, 6, 0.3);
-  }
-
+  /* Modal System */
   .bc-modal-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.8);
+    background: rgba(11, 15, 26, 0.85); /* Dark theme matching #0B0F1A */
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 500;
+    animation: fadeIn 200ms ease-out forwards;
   }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   .bc-modal {
-    background: #0D1117;
+    background: #111827;
+    border: 1px solid #1F2937;
+    border-radius: 16px;
+    padding: 32px;
+    width: 520px;
+    max-width: 95%;
+    max-height: 90vh;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    animation: scaleUp 200ms ease-out forwards;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (max-width: 768px) {
+    .bc-modal { width: 90%; padding: 24px; }
+  }
+
+  @media (max-width: 480px) {
+    .bc-modal { width: 95%; padding: 20px; }
+  }
+  
+  @keyframes scaleUp {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .bc-modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #F3F4F6;
+    text-align: center;
+    border-bottom: 1px solid #1F2937;
+    padding-bottom: 16px;
+  }
+
+  .bc-summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    font-size: 1rem;
+    color: #9CA3AF;
+  }
+
+  .bc-summary-row .val {
+    color: #F3F4F6;
+    font-weight: 600;
+  }
+
+  .bc-summary-divider {
+    height: 1px;
+    background: #1F2937;
+    margin: 16px 0;
+  }
+
+  .bc-summary-total {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 16px 0 24px 0;
+  }
+
+  .bc-summary-total .lbl {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .bc-summary-total .val {
+    font-family: ui-monospace, 'JetBrains Mono', monospace;
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: #D97706;
+    line-height: 1;
+    text-shadow: 0 4px 20px rgba(217, 119, 6, 0.4);
+  }
+
+  .bc-dates-list {
+    background: #0B0F1A;
     border: 1px solid #1F2937;
     border-radius: 8px;
-    padding: 24px;
-    width: 320px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.8);
+    padding: 12px;
+    max-height: 160px;
+    overflow-y: auto;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
-  .bc-modal-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    margin-bottom: 8px;
+
+  .bc-dates-list::-webkit-scrollbar { width: 6px; }
+  .bc-dates-list::-webkit-scrollbar-track { background: #0B0F1A; }
+  .bc-dates-list::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+
+  .bc-date-item {
+    font-family: ui-monospace, 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
     color: #E5E7EB;
-  }
-  .bc-modal-date {
-    font-family: ui-monospace, 'JetBrains Mono', monospace;
-    color: #9CA3AF;
-    font-size: 0.875rem;
-    margin-bottom: 24px;
-  }
-  .bc-modal-amt {
-    font-family: ui-monospace, 'JetBrains Mono', monospace;
-    font-size: 2rem;
-    font-weight: 700;
-    color: #D97706;
-    margin-bottom: 24px;
+    padding: 8px 16px;
+    background: #1F2937;
+    border-radius: 6px;
     text-align: center;
+    font-weight: 500;
   }
+
   .bc-modal-actions {
     display: flex;
-    gap: 12px;
-    justify-content: flex-end;
+    gap: 16px;
+    margin-top: auto;
   }
+
   .bc-btn {
-    padding: 8px 16px;
-    border-radius: 4px;
-    font-size: 0.875rem;
+    flex: 1;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     border: none;
+    transition: all 0.2s;
+    outline: none;
   }
+
+  .bc-btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
+  }
+
   .bc-btn.cancel {
     background: #1F2937;
     color: #E5E7EB;
   }
+
   .bc-btn.cancel:hover {
     background: #374151;
   }
+
   .bc-btn.confirm {
     background: #047857;
     color: #FFF;
+    box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3);
   }
+
   .bc-btn.confirm:hover {
     background: #065F46;
   }
 
+  /* Toast System */
   .bc-toast {
     position: absolute;
-    bottom: 160px;
+    bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
     background: #047857;
@@ -321,7 +365,6 @@ const styles = `
   @media (max-width: 640px) {
     .bc-cell { min-height: 78px; padding: 8px 6px; }
     .bc-amount { font-size: 0.8rem; }
-    .bc-tray.open { flex-direction: column; gap: 16px; align-items: flex-start; }
   }
 `;
 
@@ -329,7 +372,7 @@ function generateDemoData(year, month) {
   const data = {};
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   for (let i = 1; i <= daysInMonth; i++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    const dateStr = \`\${year}-\${String(month + 1).padStart(2, '0')}-\${String(i).padStart(2, '0')}\`;
     const seed = (year * 100 + month * 10 + i) % 100;
     data[dateStr] = Math.round((150 + seed * 10.8) * 100) / 100;
   }
@@ -337,6 +380,134 @@ function generateDemoData(year, month) {
 }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Helpers
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  const date = new Date(y, parseInt(m) - 1, d);
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+// Sub-components
+const Toast = ({ message }) => {
+  return (
+    <div className={\`bc-toast \${message ? 'show' : ''}\`} role="alert" aria-live="assertive">
+      {message}
+    </div>
+  );
+};
+
+const SinglePaymentModal = ({ dateStr, amount, onConfirm, onCancel }) => {
+  if (!dateStr) return null;
+  
+  // Focus trap ref
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (modalRef.current) {
+      modalRef.current.focus();
+    }
+  }, []);
+  
+  return (
+    <div 
+      className="bc-modal-overlay"
+      onClick={(e) => { if (e.target.className === 'bc-modal-overlay') onCancel(); }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="single-modal-title"
+    >
+      <div className="bc-modal" style={{ width: '380px', margin: 'auto' }} tabIndex={-1} ref={modalRef}>
+        <h2 id="single-modal-title" className="bc-modal-title">Confirm Single Payment</h2>
+        
+        <div className="bc-summary-row" style={{ marginBottom: '16px' }}>
+          <span>Date :</span>
+          <span className="val">{formatDate(dateStr)}</span>
+        </div>
+
+        <div className="bc-summary-total">
+          <span className="lbl">Total</span>
+          <span className="val" style={{ fontSize: '2.5rem' }}>£{amount?.toFixed(2)}</span>
+        </div>
+
+        <div className="bc-modal-actions">
+          <button className="bc-btn cancel" onClick={onCancel}>Cancel</button>
+          <button className="bc-btn confirm" onClick={onConfirm} autoFocus>Accept Payment</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PaymentSummaryModal = ({
+  unpaidDates,
+  totalAmount,
+  averagePerDay,
+  onConfirm,
+  onCancel
+}) => {
+  if (!unpaidDates || unpaidDates.length === 0) return null;
+
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (modalRef.current) {
+      modalRef.current.focus();
+    }
+  }, []);
+
+  return (
+    <div 
+      className="bc-modal-overlay" 
+      onClick={(e) => { if (e.target.className === 'bc-modal-overlay') onCancel(); }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="payment-modal-title"
+    >
+      <div className="bc-modal" tabIndex={-1} ref={modalRef}>
+        <h2 id="payment-modal-title" className="bc-modal-title">Payment Summary</h2>
+        
+        <div className="bc-summary-row">
+          <span>Selected Days</span>
+          <span className="val">{unpaidDates.length}</span>
+        </div>
+        
+        <div className="bc-summary-row">
+          <span>Amount Per Day</span>
+          <span className="val">£{averagePerDay.toFixed(2)}</span>
+        </div>
+
+        <div className="bc-summary-row">
+          <span>Subtotal</span>
+          <span className="val">£{totalAmount.toFixed(2)}</span>
+        </div>
+        
+        <div className="bc-summary-divider"></div>
+        
+        <div className="bc-summary-total">
+          <span className="lbl">Total</span>
+          <span className="val">£{totalAmount.toFixed(2)}</span>
+        </div>
+        
+        <div className="bc-summary-divider"></div>
+        
+        <div className="bc-dates-list" tabIndex={0} aria-label="Selected Dates List">
+          {unpaidDates.map(d => (
+            <div key={d} className="bc-date-item">
+              {formatDate(d)}
+            </div>
+          ))}
+        </div>
+        
+        <div className="bc-modal-actions">
+          <button className="bc-btn cancel" onClick={onCancel}>Cancel</button>
+          <button className="bc-btn confirm" onClick={onConfirm} autoFocus>Accept Payment</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function BillingCalendar({
   billsByDate = null,
@@ -353,9 +524,11 @@ export default function BillingCalendar({
   const [keyboardCursor, setKeyboardCursor] = useState(null);
   
   const [paidDates, setPaidDates] = useState(new Set());
-  const [showTray, setShowTray] = useState(false);
+  const [showTotalPopup, setShowTotalPopup] = useState(false);
   const [singlePaymentModal, setSinglePaymentModal] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
+  
+  const containerRef = useRef(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -374,47 +547,56 @@ export default function BillingCalendar({
     // Previous month
     for (let i = firstDay - 1; i >= 0; i--) {
       const day = daysInPrevMonth - i;
-      const dateStr = `${month === 0 ? year - 1 : year}-${String(month === 0 ? 12 : month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = \`\${month === 0 ? year - 1 : year}-\${String(month === 0 ? 12 : month).padStart(2, '0')}-\${String(day).padStart(2, '0')}\`;
       days.push({ day, dateStr, isCurrentMonth: false });
     }
 
     // Current month
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = \`\${year}-\${String(month + 1).padStart(2, '0')}-\${String(day).padStart(2, '0')}\`;
       days.push({ day, dateStr, isCurrentMonth: true });
     }
 
     // Next month
     const remaining = 42 - days.length;
     for (let day = 1; day <= remaining; day++) {
-      const dateStr = `${month === 11 ? year + 1 : year}-${String(month === 11 ? 1 : month + 2).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = \`\${month === 11 ? year + 1 : year}-\${String(month === 11 ? 1 : month + 2).padStart(2, '0')}-\${String(day).padStart(2, '0')}\`;
       days.push({ day, dateStr, isCurrentMonth: false });
     }
 
     return days;
   }, [year, month]);
 
+  const unpaidSelectedDates = useMemo(() => {
+    const sorted = Array.from(selectedDates).sort();
+    return sorted.filter(date => !paidDates.has(date) && currentMonthData[date]);
+  }, [selectedDates, paidDates, currentMonthData]);
+
   const totalSelectedAmount = useMemo(() => {
     let total = 0;
-    selectedDates.forEach(date => {
-      if (!paidDates.has(date)) {
-        total += currentMonthData[date] || 0;
-      }
+    unpaidSelectedDates.forEach(date => {
+      total += currentMonthData[date] || 0;
     });
     return Math.round(total * 100) / 100;
-  }, [selectedDates, currentMonthData, paidDates]);
+  }, [unpaidSelectedDates, currentMonthData]);
 
-  // Make sure tray updates immediately if selection changes while open
+  const averagePerDay = useMemo(() => {
+    if (unpaidSelectedDates.length === 0) return 0;
+    return Math.round((totalSelectedAmount / unpaidSelectedDates.length) * 100) / 100;
+  }, [totalSelectedAmount, unpaidSelectedDates]);
+
+  // Make sure popup closes if selection empties
   useEffect(() => {
-    if (showTray && selectedDates.size === 0) {
-      setShowTray(false);
+    if (showTotalPopup && selectedDates.size === 0) {
+      setShowTotalPopup(false);
     }
-  }, [selectedDates, showTray]);
+  }, [selectedDates, showTotalPopup]);
 
   const resetSelection = useCallback(() => {
     setSelectedDates(new Set());
     setSelectionStart(null);
-    setShowTray(false);
+    setShowTotalPopup(false);
+    if (containerRef.current) containerRef.current.focus();
   }, []);
 
   const computeRange = useCallback((start, end) => {
@@ -502,53 +684,63 @@ export default function BillingCalendar({
   const handleEsc = useCallback(() => {
     if (singlePaymentModal) {
       setSinglePaymentModal(null);
-    } else if (showTray) {
-      setShowTray(false);
+      if (containerRef.current) containerRef.current.focus();
+    } else if (showTotalPopup) {
+      setShowTotalPopup(false);
+      if (containerRef.current) containerRef.current.focus();
     } else {
       resetSelection();
     }
-  }, [singlePaymentModal, showTray, resetSelection]);
+  }, [singlePaymentModal, showTotalPopup, resetSelection]);
 
   const handleF7 = useCallback(() => {
-    if (selectedDates.size > 0) {
-      setShowTray(true);
+    if (selectedDates.size > 0 && totalSelectedAmount > 0) {
+      setShowTotalPopup(true);
     }
-  }, [selectedDates]);
+  }, [selectedDates, totalSelectedAmount]);
 
   const handleF9 = useCallback(() => {
-    if (!showTray || selectedDates.size === 0) return;
+    if ((!showTotalPopup && !singlePaymentModal) || selectedDates.size === 0) return;
     
-    const unpaidDates = Array.from(selectedDates).filter(d => !paidDates.has(d) && currentMonthData[d]);
-    if (unpaidDates.length === 0) return;
+    if (unpaidSelectedDates.length === 0) return;
     
     const newPaid = new Set(paidDates);
-    unpaidDates.forEach(d => newPaid.add(d));
+    unpaidSelectedDates.forEach(d => newPaid.add(d));
     setPaidDates(newPaid);
     
     onAcceptPayment?.({
-      dates: unpaidDates,
+      dates: unpaidSelectedDates,
       total: totalSelectedAmount,
     });
 
-    setToastMsg(`Payment of £${totalSelectedAmount.toFixed(2)} recorded successfully`);
+    setToastMsg(\`Payment of £\${totalSelectedAmount.toFixed(2)} recorded successfully\`);
     setTimeout(() => setToastMsg(''), 2800);
     
     resetSelection();
-  }, [showTray, selectedDates, paidDates, currentMonthData, totalSelectedAmount, onAcceptPayment, resetSelection]);
+    setSinglePaymentModal(null);
+  }, [showTotalPopup, singlePaymentModal, selectedDates, paidDates, unpaidSelectedDates, totalSelectedAmount, onAcceptPayment, resetSelection]);
 
   const handleEnter = useCallback(() => {
+    if (showTotalPopup || singlePaymentModal) {
+      handleF9();
+      return;
+    }
+    
     if (selectedDates.size === 1) {
       const dateStr = Array.from(selectedDates)[0];
       if (!paidDates.has(dateStr) && currentMonthData[dateStr]) {
         setSinglePaymentModal(dateStr);
       }
+    } else if (selectedDates.size > 1 && totalSelectedAmount > 0) {
+      setShowTotalPopup(true);
     }
-  }, [selectedDates, paidDates, currentMonthData]);
+  }, [selectedDates, paidDates, currentMonthData, totalSelectedAmount, showTotalPopup, singlePaymentModal, handleF9]);
 
   useEffect(() => {
     const handler = (e) => {
-      if (singlePaymentModal) {
+      if (singlePaymentModal || showTotalPopup) {
         if (e.key === 'Escape') handleEsc();
+        if (e.key === 'F9' || e.key === 'Enter') { e.preventDefault(); handleF9(); }
         return;
       }
       if (e.key === 'Escape') { e.preventDefault(); handleEsc(); }
@@ -565,7 +757,7 @@ export default function BillingCalendar({
       window.removeEventListener('keydown', handler);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [handleEsc, handleF7, handleF9, handleEnter, handleKeyboardNav, onMouseUp, singlePaymentModal]);
+  }, [handleEsc, handleF7, handleF9, handleEnter, handleKeyboardNav, onMouseUp, singlePaymentModal, showTotalPopup]);
 
   const monthLabel = currentDate.toLocaleString('default', { 
     month: 'long', 
@@ -575,12 +767,17 @@ export default function BillingCalendar({
   return (
     <>
       <style>{styles}</style>
-      <div className="bc-container" tabIndex={0} onFocus={(e) => {
-        if (!keyboardCursor) {
-          const first = daysGrid.find(d => d.isCurrentMonth);
-          if (first) setKeyboardCursor(first.dateStr);
-        }
-      }}>
+      <div 
+        className="bc-container" 
+        tabIndex={0} 
+        ref={containerRef}
+        onFocus={() => {
+          if (!keyboardCursor) {
+            const first = daysGrid.find(d => d.isCurrentMonth);
+            if (first) setKeyboardCursor(first.dateStr);
+          }
+        }}
+      >
         {/* Header */}
         <div className="bc-header">
           <div className="bc-header-title">{monthLabel}</div>
@@ -618,7 +815,7 @@ export default function BillingCalendar({
         {/* Weekday Headers */}
         <div className="bc-grid">
           {WEEKDAYS.map(day => (
-            <div key={day} className="bc-day-header">{day}</div>
+            <div className="bc-day-header" key={day}>{day}</div>
           ))}
         </div>
 
@@ -633,7 +830,7 @@ export default function BillingCalendar({
             const isPaid = paidDates.has(dayObj.dateStr);
             const isCursor = keyboardCursor === dayObj.dateStr;
             const amount = dayObj.isCurrentMonth ? currentMonthData[dayObj.dateStr] || 0 : 0;
-            const displayAmount = amount ? `£${amount.toFixed(2)}` : '';
+            const displayAmount = amount > 0 ? \`£\${amount.toFixed(2)}\` : '';
 
             let cellClass = "bc-cell";
             if (!dayObj.isCurrentMonth) {
@@ -652,7 +849,7 @@ export default function BillingCalendar({
                 onMouseEnter={() => dayObj.isCurrentMonth && onMouseEnter(dayObj.dateStr)}
                 role="button"
                 aria-pressed={isSelected}
-                aria-label={`${dayObj.day} ${monthLabel} - £${amount}`}
+                aria-label={\`\${dayObj.day} \${monthLabel} - £\${amount}\`}
               >
                 <div className="bc-date-num">{dayObj.day}</div>
                 {amount > 0 && (
@@ -663,56 +860,26 @@ export default function BillingCalendar({
           })}
         </div>
 
-        {/* Bottom Tray */}
-        <div className={`bc-tray ${showTray ? 'open' : ''}`}>
-          <div className="bc-tray-total">
-            <div className="bc-tray-label">
-              Total Selected ({selectedDates.size} day{selectedDates.size !== 1 ? 's' : ''})
-            </div>
-            <div className="bc-tray-value">
-              £{totalSelectedAmount.toFixed(2)}
-            </div>
-          </div>
-
-          {totalSelectedAmount > 0 && (
-            <div className="bc-status-pill" onClick={handleF9}>
-              F9 to Accept Payment
-            </div>
-          )}
-        </div>
-
-        {/* Single Payment Modal */}
-        {singlePaymentModal && (
-          <div className="bc-modal-overlay">
-            <div className="bc-modal">
-              <div className="bc-modal-title">Confirm Single Payment</div>
-              <div className="bc-modal-date">Date: {singlePaymentModal}</div>
-              <div className="bc-modal-amt">
-                £{currentMonthData[singlePaymentModal]?.toFixed(2)}
-              </div>
-              <div className="bc-modal-actions">
-                <button className="bc-btn cancel" onClick={() => setSinglePaymentModal(null)}>Cancel</button>
-                <button className="bc-btn confirm" onClick={() => {
-                  const newPaid = new Set(paidDates);
-                  newPaid.add(singlePaymentModal);
-                  setPaidDates(newPaid);
-                  onAcceptPayment?.({
-                    dates: [singlePaymentModal],
-                    total: currentMonthData[singlePaymentModal]
-                  });
-                  setSinglePaymentModal(null);
-                  resetSelection();
-                  setToastMsg(`Payment of £${currentMonthData[singlePaymentModal]?.toFixed(2)} recorded successfully`);
-                  setTimeout(() => setToastMsg(''), 2800);
-                }}>Mark as Paid</button>
-              </div>
-            </div>
-          </div>
+        {showTotalPopup && (
+          <PaymentSummaryModal 
+            unpaidDates={unpaidSelectedDates}
+            totalAmount={totalSelectedAmount}
+            averagePerDay={averagePerDay}
+            onConfirm={handleF9}
+            onCancel={handleEsc}
+          />
         )}
 
-        <div className={`bc-toast ${toastMsg ? 'show' : ''}`}>
-          {toastMsg}
-        </div>
+        {singlePaymentModal && (
+          <SinglePaymentModal 
+            dateStr={singlePaymentModal}
+            amount={currentMonthData[singlePaymentModal]}
+            onConfirm={handleF9}
+            onCancel={handleEsc}
+          />
+        )}
+
+        <Toast message={toastMsg} />
       </div>
     </>
   );

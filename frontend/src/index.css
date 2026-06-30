@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,25 +12,64 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #0d1117;
+  background-color: theme('colors.nc.bg');
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+  color: theme('colors.nc.text');
+  font-family: theme('fontFamily.sans');
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: theme('fontFamily.display');
 }
 
 input,
 select,
 textarea,
 button {
-  font-family: "JetBrains Mono", Consolas, monospace;
+  font-family: theme('fontFamily.sans');
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3a3a5c;
+  background: theme('colors.nc.border');
   border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.nc.muted');
 }
 
 .toast {
-  @apply fixed top-4 right-4 z-[200] px-4 py-2 rounded-md text-sm font-semibold shadow-lg;
+  @apply fixed top-4 right-4 z-[200] px-4 py-3 rounded-xl text-sm font-semibold shadow-2xl backdrop-blur-md;
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  @apply bg-nc-panel backdrop-blur-xl border border-nc-border shadow-xl;
+}
+.glass-card {
+  @apply bg-nc-card backdrop-blur-md border border-nc-border rounded-xl transition-all duration-300;
+}
+.glass-card:hover {
+  @apply border-nc-accent shadow-[0_8px_30px_rgb(0,0,0,0.12)];
+}
+
+/* Primary Button */
+.btn-primary {
+  @apply bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-none rounded-lg px-5 py-2 font-display font-semibold transition-all duration-200 shadow-[0_4px_12px_rgba(99,102,241,0.2)];
+}
+.btn-primary:hover {
+  @apply transform -translate-y-[2px] shadow-[0_6px_16px_rgba(99,102,241,0.3)];
+}
+
+.input-glass {
+  @apply bg-black/20 border border-nc-border text-nc-text rounded-lg px-4 py-2 font-sans transition-all w-full focus:outline-none focus:border-nc-accent focus:ring-2 focus:ring-nc-accent/20;
 }

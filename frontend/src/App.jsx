@@ -9,11 +9,11 @@ import Settings from "./pages/Settings";
 import WeeklyAccount from "./pages/WeeklyAccount";
 
 const NAV = [
-  { id: "dashboard",  label: "Dashboard",    key: "1" },
-  { id: "customers",  label: "Customers",    key: "2" },
-  { id: "products",   label: "Publications", key: "3" },
-  { id: "rounds",     label: "Rounds",       key: "4" },
-  { id: "settings",   label: "Settings",     key: "0" },
+  { id: "dashboard",  label: "Dashboard",    key: "1", icon: "📊" },
+  { id: "customers",  label: "Customers",    key: "2", icon: "👥" },
+  { id: "products",   label: "Publications", key: "3", icon: "📰" },
+  { id: "rounds",     label: "Rounds",       key: "4", icon: "🚲" },
+  { id: "settings",   label: "Settings",     key: "0", icon: "⚙️" },
 ];
 
 const CUSTOMER_FIELDS = [
@@ -51,6 +51,7 @@ export default function App() {
   const [rounds, setRounds]   = useState([]);
   const [customers, setCustomers] = useState([]);
   const [online, setOnline]   = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Terminal sub-screens
   const [weeklyCustomerId, setWeeklyCustomerIdState] = useState(() => {
@@ -62,7 +63,7 @@ export default function App() {
     return v ? parseInt(v, 10) : null;
   });
 
-  const setScreen = (s) => { setScreenState(s); sessionStorage.setItem("nc_screen", s); };
+  const setScreen = (s) => { setScreenState(s); sessionStorage.setItem("nc_screen", s); setMobileMenuOpen(false); };
   const setWeeklyCustomerId = (id) => { 
     setWeeklyCustomerIdState(id); 
     if (id !== null) sessionStorage.setItem("nc_weekly", id);
@@ -118,7 +119,7 @@ export default function App() {
   // ── Terminal sub-screen overlays ────────────────────
   if (weeklyCustomerId !== null) {
     return (
-      <div style={{ height: "100vh", background: "#1a1a1a", display: "flex", flexDirection: "column" }}>
+      <div className="flex flex-col h-screen bg-nc-bg">
         <WeeklyAccount
           customerId={weeklyCustomerId}
           onClose={() => setWeeklyCustomerId(null)}
@@ -133,7 +134,7 @@ export default function App() {
 
   if (calendarCustomerId !== null) {
     return (
-      <div style={{ height: "100vh", background: "#1a1a1a", display: "flex", flexDirection: "column" }}>
+      <div className="flex flex-col h-screen bg-nc-bg">
         <PaymentCalendar
           customerId={calendarCustomerId}
           onClose={() => setCalendarCustomerId(null)}
@@ -176,17 +177,17 @@ export default function App() {
             onToast={showToast}
             extraRowActions={[
               {
-                label: "Weekly A/c",
-                style: { background: "#1a3a3a", color: "#20b2aa", border: "1px solid #20b2aa",
-                  borderRadius: 3, padding: "2px 8px", fontSize: 11, cursor: "pointer",
-                  fontFamily: "Courier New" },
+                label: "Weekly",
+                style: { background: "rgba(99,102,241,0.15)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.3)",
+                  borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer", fontWeight: 600,
+                  transition: "all 0.2s" },
                 onClick: (row) => setWeeklyCustomerId(row.id),
               },
               {
                 label: "Calendar",
-                style: { background: "#1a2a3a", color: "#20b2aa", border: "1px solid #20b2aa",
-                  borderRadius: 3, padding: "2px 8px", fontSize: 11, cursor: "pointer",
-                  fontFamily: "Courier New" },
+                style: { background: "rgba(16,185,129,0.15)", color: "#34d399", border: "1px solid rgba(16,185,129,0.3)",
+                  borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer", fontWeight: 600,
+                  marginLeft: 8, transition: "all 0.2s" },
                 onClick: (row) => setCalendarCustomerId(row.id),
               },
             ]}
@@ -247,28 +248,75 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-nc-bg">
-      <aside className="flex w-52 flex-col border-r border-nc-border bg-nc-panel">
-        <div className="border-b border-nc-border px-3 py-4">
-          <div className="text-sm font-bold text-nc-accent">NEWSCARD</div>
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-nc-bg text-nc-text font-sans">
+      
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Navigation */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform flex-col border-r border-nc-border glass-panel transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} flex`}>
+        <div className="flex h-16 items-center justify-between border-b border-nc-border px-6">
+          <div className="font-display text-xl font-bold tracking-tight text-white">
+            NEWS<span className="text-nc-accent">CARD</span>
+          </div>
+          <button className="lg:hidden text-nc-muted hover:text-white" onClick={() => setMobileMenuOpen(false)}>
+            ✕
+          </button>
         </div>
-        <nav className="flex-1 p-2">
+        <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
           {NAV.map((n) => (
             <button
               key={n.id}
               type="button"
               onClick={() => { setScreen(n.id); setWeeklyCustomerId(null); setCalendarCustomerId(null); }}
-              className={`mb-1 w-full rounded px-3 py-2 text-left text-xs transition ${
-                screen === n.id ? "bg-[#0f3460] text-white" : "text-nc-muted hover:bg-nc-card hover:text-white"
+              className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium transition-all ${
+                screen === n.id 
+                  ? "bg-nc-accent/15 text-nc-accent shadow-[inset_2px_0_0_0_#6366f1]" 
+                  : "text-nc-muted hover:bg-white/5 hover:text-white"
               }`}
             >
-              Ctrl+{n.key} {n.label}
+              <span className="text-lg">{n.icon}</span>
+              <span>{n.label}</span>
+              <span className="ml-auto text-[10px] uppercase tracking-wider opacity-50 hidden lg:block">^ {n.key}</span>
             </button>
           ))}
         </nav>
+        <div className="border-t border-nc-border p-4">
+          <div className="flex items-center gap-3 rounded-lg bg-black/20 p-3 text-sm">
+            <div className={`h-2.5 w-2.5 rounded-full ${online ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-red-500'}`} />
+            <span className="text-nc-muted font-medium">{online ? 'System Online' : 'Offline Mode'}</span>
+          </div>
+        </div>
       </aside>
-      <main className="flex min-w-0 flex-1 flex-col">{content()}</main>
+
+      {/* Main Content Area */}
+      <main className="flex min-w-0 flex-1 flex-col h-[100dvh] overflow-hidden">
+        {/* Mobile Header */}
+        <div className="flex h-16 shrink-0 items-center border-b border-nc-border bg-nc-panel/50 px-4 backdrop-blur-md lg:hidden">
+          <button 
+            onClick={() => setMobileMenuOpen(true)}
+            className="rounded-lg p-2 text-nc-muted hover:bg-white/10 hover:text-white"
+          >
+            ☰ Menu
+          </button>
+          <div className="ml-4 font-display text-lg font-bold text-white">
+            NEWS<span className="text-nc-accent">CARD</span>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-hidden relative">
+          {content()}
+        </div>
+      </main>
+
       {helpOpen && <HelpModal screen={screen} onClose={() => setHelpOpen(false)} />}
+      
+      {/* Premium Toast Notification */}
       <Toast message={toast.message} type={toast.type} />
     </div>
   );
